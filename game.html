@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OUTBREAK: Holdout</title>
+<link href="https://fonts.googleapis.com/css2?family=Staatliches&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="game.css">
+</head>
+<body>
+<div id="game-container">
+  <canvas id="gameCanvas"></canvas>
+  <div id="horde-alert"></div>
+  <div id="vignette"></div>
+  <div id="damage-flash"></div>
+
+  <div id="autoModeTag">AUTO MODE</div>
+
+  <div id="pauseScreen">
+    <div class="pause-panel">
+      <div class="status-line">Signal paused</div>
+      <div class="pause-title">PAUSED</div>
+      <div class="pause-hint">Press <b>Esc</b> to resume</div>
+    </div>
+  </div>
+
+  <div id="hud">
+    <div class="hud-col">
+      <div class="health-row">
+        <div class="health-outer"><div class="health-inner" id="healthBar"></div></div>
+        <span class="health-num" id="healthNum">100</span>
+      </div>
+      <div class="weapon-row" id="weaponRow">Pistol</div>
+    </div>
+    <div class="hud-col right">
+      <div class="score-row" id="scoreRow">Score 0</div>
+      <div class="wave-row">Kills <span class="num" id="killsNum">0</span> — <span id="zombiesLeft">0</span> alive</div>
+    </div>
+  </div>
+
+  <div id="heliTimer"></div>
+
+  <div id="ammoHud">
+    <span class="w" id="ammoWeapon">Pistol</span>
+    <span class="a" id="ammoCount">7 / ∞</span>
+    <span class="reload" id="reloadTag"></span>
+  </div>
+
+  <!-- Slot HUD -->
+  <div id="slotsHud">
+    <div class="slot" data-slot="1">
+      <div class="slot-key">1</div>
+      <div class="slot-info">
+        <div class="slot-name" id="slot1Name">Shotgun</div>
+        <div class="slot-sub" id="slot1Sub">0</div>
+      </div>
+    </div>
+    <div class="slot active" data-slot="2">
+      <div class="slot-key">2</div>
+      <div class="slot-info">
+        <div class="slot-name" id="slot2Name">Pistol</div>
+        <div class="slot-sub" id="slot2Sub">∞</div>
+      </div>
+    </div>
+    <div class="slot" data-slot="3">
+      <div class="slot-key">3</div>
+      <div class="slot-info">
+        <div class="slot-name" id="slot3Name">AID Kit</div>
+        <div class="slot-sub" id="slot3Sub">0</div>
+      </div>
+    </div>
+    <div class="slot" data-slot="4">
+      <div class="slot-key">4</div>
+      <div class="slot-info">
+        <div class="slot-name" id="slot4Name">Grenade</div>
+        <div class="slot-sub" id="slot4Sub">0</div>
+      </div>
+    </div>
+    <div class="slot" data-slot="5">
+      <div class="slot-key">5</div>
+      <div class="slot-info">
+        <div class="slot-name" id="slot5Name">Syringe</div>
+        <div class="slot-sub" id="slot5Sub">0</div>
+      </div>
+    </div>
+  </div>
+
+  <button id="callBtn" type="button">
+    <span class="key">E</span> <span id="callBtnLabel">Call Helicopter</span>
+  </button>
+
+  <div id="center-banner"></div>
+
+  <div id="gameOver">
+    <div class="panel">
+      <div class="status" id="gameOverStatus">Transmission ended</div>
+      <div class="title" id="gameOverTitle">YOU DIED</div>
+      <p class="stat">Score <b id="finalScore">0</b></p>
+      <p class="stat">Kills <b id="finalKills">0</b></p>
+      <p class="stat">Best <b id="bestScore">0</b></p>
+      <button class="btn" id="restartBtn">Restart</button>
+      <div class="hint">yoki <b>R</b> tugmasini bosing</div>
+    </div>
+  </div>
+</div>
+
+<!-- Modul tartibi muhim: avval data/logika, keyin main -->
+<script src="audio.js"></script>
+<script src="music.js"></script>
+<script src="world.js"></script>
+<script src="weapons.js"></script>
+<script src="zombies.js"></script>
+<script src="items.js"></script>
+<script src="ai.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
