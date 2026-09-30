@@ -7,7 +7,7 @@
   --bone:#d8d1c2;
   --ash:#837b6d;
 }
-*{box-sizing:border-box;margin:0;padding:0;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{
   width:100%;height:100%;
   background:var(--void);
@@ -15,10 +15,16 @@ html,body{
   color:var(--bone);
   font-family: ui-monospace, 'SF Mono', 'Cascadia Code', 'Courier New', monospace;
   -webkit-font-smoothing:antialiased;
+  touch-action:none;
+  user-select:none;
+  -webkit-user-select:none;
 }
 #game-container{ position:relative; width:100vw; height:100vh; background:var(--void); }
 canvas{ position:absolute; top:0; left:0; z-index:1; display:block; cursor:crosshair; }
 
+/* ============================================================
+   COMMON OVERLAYS
+   ============================================================ */
 #vignette{
   position:absolute; inset:0; z-index:3; pointer-events:none;
   background: radial-gradient(ellipse at center, rgba(0,0,0,0) 52%, rgba(0,0,0,0.62) 100%);
@@ -38,6 +44,33 @@ canvas{ position:absolute; top:0; left:0; z-index:1; display:block; cursor:cross
 @keyframes hordePulse{
   0%,100%{ opacity:0.35; }
   50%{ opacity:0.75; }
+}
+#vomit-overlay{
+  position:absolute; inset:0; z-index:4; pointer-events:none;
+  background: radial-gradient(ellipse at center, rgba(107,143,63,0) 20%, rgba(107,143,63,0.85) 100%);
+  opacity:0; transition:opacity .3s ease;
+}
+#vomit-overlay.show{ opacity:1; }
+
+#tank-alert{
+  position:absolute; inset:0; z-index:6; pointer-events:none;
+  display:none; align-items:center; justify-content:center;
+  background: radial-gradient(ellipse at center, rgba(163,47,34,0) 30%, rgba(163,47,34,0.55) 100%);
+}
+#tank-alert.show{ display:flex; animation: tankFlash 0.6s ease-in-out infinite; }
+#tank-alert .tank-text{
+  font-family:'Staatliches', sans-serif;
+  font-size:clamp(48px,10vw,110px);
+  letter-spacing:12px;
+  color:var(--blood-hot);
+  text-shadow:
+    4px 0 0 #000, -4px 0 0 #000, 0 4px 0 #000, 0 -4px 0 #000,
+    0 0 40px rgba(224,82,60,0.9), 0 0 80px rgba(163,47,34,0.7);
+  text-transform:uppercase;
+}
+@keyframes tankFlash{
+  0%,100%{ opacity:0.55; }
+  50%{ opacity:1; }
 }
 
 #autoModeTag{
@@ -65,8 +98,7 @@ canvas{ position:absolute; top:0; left:0; z-index:1; display:block; cursor:cross
   background: rgba(0,0,0,0.5);
 }
 .status-line{
-  font-size:11px; letter-spacing:2px; color:var(--amber);
-  margin-bottom:18px;
+  font-size:11px; letter-spacing:2px; color:var(--amber); margin-bottom:18px;
 }
 .status-line::before{ content:'\25CF  '; color:var(--blood-hot); }
 .pause-title{
@@ -77,6 +109,24 @@ canvas{ position:absolute; top:0; left:0; z-index:1; display:block; cursor:cross
 }
 .pause-hint{ margin-top:20px; font-size:13px; color:var(--ash); }
 .pause-hint b{ color:var(--amber); }
+
+#center-banner{
+  position:absolute; top:38%; left:50%; transform:translate(-50%,-50%);
+  font-family:'Staatliches', sans-serif;
+  font-size:30px; letter-spacing:4px;
+  color:var(--blood-hot);
+  text-shadow:0 0 14px rgba(224,82,60,.75), 0 0 34px rgba(163,47,34,.4);
+  opacity:0; pointer-events:none; z-index:6; text-transform:uppercase;
+  transition:opacity .35s ease;
+  text-align:center;
+  white-space:nowrap;
+}
+#center-banner.show{ opacity:1; }
+
+/* ============================================================
+   DESKTOP HUD (default ko'rinadi)
+   ============================================================ */
+#desktopHud{ display:block; }
 
 #hud{
   position:absolute; top:0; left:0; width:100%;
@@ -103,19 +153,6 @@ canvas{ position:absolute; top:0; left:0; z-index:1; display:block; cursor:cross
 .score-row{ font-size:19px; font-weight:600; letter-spacing:1px; text-shadow:0 0 6px rgba(0,0,0,.8); }
 .wave-row{ font-size:12.5px; color:var(--ash); letter-spacing:0.5px; }
 .wave-row .num{ color:var(--blood-hot); font-weight:600; }
-
-#center-banner{
-  position:absolute; top:38%; left:50%; transform:translate(-50%,-50%);
-  font-family:'Staatliches', sans-serif;
-  font-size:30px; letter-spacing:4px;
-  color:var(--blood-hot);
-  text-shadow:0 0 14px rgba(224,82,60,.75), 0 0 34px rgba(163,47,34,.4);
-  opacity:0; pointer-events:none; z-index:6; text-transform:uppercase;
-  transition:opacity .35s ease;
-  text-align:center;
-  white-space:nowrap;
-}
-#center-banner.show{ opacity:1; }
 
 #ammoHud{
   position:absolute; bottom:20px; left:26px; z-index:5; pointer-events:none;
@@ -153,9 +190,7 @@ canvas{ position:absolute; top:0; left:0; z-index:1; display:block; cursor:cross
   font-size:11px; color:var(--ash); font-weight:700;
   background: rgba(0,0,0,0.4);
 }
-.slot.active .slot-key{
-  border-color:var(--amber); color:var(--amber);
-}
+.slot.active .slot-key{ border-color:var(--amber); color:var(--amber); }
 .slot-info{ display:flex; flex-direction:column; line-height:1.1; }
 .slot-name{ font-size:11px; color:var(--bone); font-weight:600; letter-spacing:0.5px; }
 .slot-sub{ font-size:10px; color:var(--ash); letter-spacing:0.5px; }
@@ -171,9 +206,7 @@ canvas{ position:absolute; top:0; left:0; z-index:1; display:block; cursor:cross
 }
 #heliTimer.show{ display:block; }
 #heliTimer .t{ color:var(--bone); font-size:15px; }
-#heliTimer.horde{
-  border-color:var(--blood-hot); color:var(--blood-hot);
-}
+#heliTimer.horde{ border-color:var(--blood-hot); color:var(--blood-hot); }
 
 #callBtn{
   position:absolute; bottom:22px; right:26px; z-index:7;
@@ -192,13 +225,8 @@ canvas{ position:absolute; top:0; left:0; z-index:1; display:block; cursor:cross
   padding:1px 7px; border-radius:3px;
   font-size:12px; color:var(--amber);
 }
-#callBtn:hover:not(:disabled){
-  background:var(--blood);
-  box-shadow:0 0 22px rgba(163,47,34,.55);
-}
-#callBtn:disabled{
-  opacity:0.35; cursor:not-allowed; border-color:var(--ash);
-}
+#callBtn:hover:not(:disabled){ background:var(--blood); box-shadow:0 0 22px rgba(163,47,34,.55); }
+#callBtn:disabled{ opacity:0.35; cursor:not-allowed; border-color:var(--ash); }
 #callBtn.calling{
   border-color:var(--amber); color:var(--amber);
   animation: pulse 1.1s ease-in-out infinite;
@@ -208,6 +236,13 @@ canvas{ position:absolute; top:0; left:0; z-index:1; display:block; cursor:cross
   50%{ box-shadow:0 0 24px rgba(201,138,46,.7); }
 }
 
+/* ============================================================
+   MOBILE HUD (default yashirin)
+   ============================================================ */
+#mobileHud{ display:none; }
+#mMobileHint{ display:none; }
+
+/* Game Over panel */
 #gameOver{
   position:absolute; inset:0; z-index:10;
   display:none; flex-direction:column; align-items:center; justify-content:center;
@@ -245,3 +280,288 @@ canvas{ position:absolute; top:0; left:0; z-index:1; display:block; cursor:cross
 #gameOver .btn:hover{ background:var(--blood); box-shadow:0 0 22px rgba(163,47,34,.55); }
 #gameOver .hint{ font-size:11px; color:var(--ash); margin-top:10px; letter-spacing:1px; }
 #gameOver .hint b{ color:var(--amber); }
+
+/* ============================================================
+   TELEFON / TABLET — faqat touch qurilmalar uchun
+   ============================================================ */
+@media (pointer: coarse), (max-width: 900px) {
+  /* Desktop HUD ni yashirish */
+  #desktopHud{ display:none !important; }
+  #mobileHud{ display:block; }
+
+  /* Katta tugmalar */
+  #mPauseBtn{
+    position:absolute; top:14px; right:14px; z-index:8;
+    width:56px; height:56px;
+    border-radius:14px;
+    background: rgba(10,8,7,0.72);
+    border:2px solid rgba(216,209,194,0.35);
+    color: var(--bone);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    transition: transform .1s ease, background-color .1s ease;
+    backdrop-filter: blur(6px);
+  }
+  #mPauseBtn:active{ transform: scale(0.92); background: rgba(163,47,34,0.6); }
+
+  /* Health bar (top-left) */
+  #mTopLeft{
+    position:absolute; top:14px; left:14px; z-index:8;
+    display:flex; flex-direction:column; gap:8px;
+    pointer-events:none;
+  }
+  .m-health-outer{
+    width:170px; height:26px;
+    background: rgba(10,8,7,0.72);
+    border:2px solid rgba(216,209,194,0.35);
+    border-radius:6px;
+    position:relative;
+    overflow:hidden;
+    backdrop-filter: blur(6px);
+  }
+  .m-health-inner{
+    position:absolute; left:0; top:0; bottom:0;
+    width:100%;
+    background: linear-gradient(90deg, var(--toxic), #8fc760);
+    transition: width .2s ease, background-color .3s ease;
+    border-radius:4px;
+  }
+  .m-health-num{
+    position:absolute; right:8px; top:50%; transform:translateY(-50%);
+    font-size:13px; font-weight:700;
+    color: #fff;
+    text-shadow: 0 0 4px #000, 0 1px 2px #000;
+    letter-spacing:1px;
+  }
+  .m-kills{
+    display:flex; align-items:center; gap:6px;
+    background: rgba(10,8,7,0.72);
+    border:2px solid rgba(216,209,194,0.35);
+    border-radius:6px;
+    padding: 4px 10px;
+    align-self: flex-start;
+    backdrop-filter: blur(6px);
+  }
+  .m-kills-icon{ font-size:14px; color: var(--blood-hot); line-height:1; }
+  .m-kills-num{ font-size:15px; font-weight:700; color: var(--bone); letter-spacing:1px; }
+
+  /* Slotlar (vertikal, pause ostida) */
+  #mSlots{
+    position:absolute; top:82px; right:14px; z-index:8;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .m-slot{
+    width:56px; height:56px;
+    border-radius:14px;
+    background: rgba(10,8,7,0.72);
+    border:2px solid rgba(216,209,194,0.28);
+    color: rgba(216,209,194,0.65);
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    gap:1px;
+    cursor:pointer;
+    transition: all .12s ease;
+    position:relative;
+    backdrop-filter: blur(6px);
+    padding:0;
+  }
+  .m-slot.active{
+    border-color: var(--amber);
+    background: rgba(201,138,46,0.22);
+    color: var(--amber);
+    box-shadow: 0 0 16px rgba(201,138,46,0.5);
+    transform: scale(1.05);
+  }
+  .m-slot:active{ transform: scale(0.94); }
+  .m-slot-icon{
+    display:flex; align-items:center; justify-content:center;
+    width:26px; height:26px;
+  }
+  .m-slot-ammo{
+    font-size:10px; font-weight:700;
+    color: var(--bone);
+    line-height:1;
+    letter-spacing:0.5px;
+  }
+  .m-slot.active .m-slot-ammo{ color: var(--amber); }
+
+  /* Joystick umumiy */
+  .m-joy{
+    position:relative;
+    width: 130px; height: 130px;
+    display:flex; align-items:center; justify-content:center;
+    touch-action:none;
+    user-select:none;
+  }
+  .m-joy-base{
+    width: 130px; height: 130px;
+    border-radius:50%;
+    background: radial-gradient(circle at center,
+      rgba(20,16,14,0.45) 0%,
+      rgba(20,16,14,0.7) 65%,
+      rgba(10,8,7,0.8) 100%);
+    border: 2px solid rgba(216,209,194,0.28);
+    position:absolute;
+    top:0; left:0;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+  }
+  .m-joy-knob{
+    width: 60px; height: 60px;
+    border-radius:50%;
+    background: radial-gradient(circle at 35% 30%,
+      rgba(216,209,194,0.85) 0%,
+      rgba(131,123,109,0.9) 50%,
+      rgba(60,55,48,0.95) 100%);
+    border: 2px solid rgba(216,209,194,0.6);
+    position:absolute;
+    top:50%; left:50%;
+    transform: translate(-50%, -50%);
+    box-shadow:
+      0 4px 14px rgba(0,0,0,0.7),
+      inset 0 -3px 8px rgba(0,0,0,0.4),
+      inset 0 2px 6px rgba(255,255,255,0.15);
+    transition: none;
+    pointer-events:none;
+  }
+  .m-fire-base{
+    border-color: rgba(224,82,60,0.5);
+    background: radial-gradient(circle at center,
+      rgba(60,20,15,0.4) 0%,
+      rgba(60,20,15,0.65) 65%,
+      rgba(30,10,8,0.8) 100%);
+  }
+  .m-fire-knob{
+    background: radial-gradient(circle at 35% 30%,
+      rgba(255,160,120,0.95) 0%,
+      rgba(224,82,60,0.95) 50%,
+      rgba(140,40,25,0.95) 100%);
+    border-color: rgba(255,180,140,0.7);
+  }
+
+  #mMoveZone{
+    position:absolute; bottom: 24px; left: 24px; z-index:7;
+    pointer-events:auto;
+  }
+  #mFireZone{
+    position:absolute; bottom: 24px; right: 24px; z-index:7;
+    pointer-events:auto;
+  }
+
+  /* Reload / Push (kichik tugmalar, joystick'lar orasida) */
+  #mReloadBtn, #mPushBtn{
+    position:absolute; z-index:8;
+    width: 48px; height: 48px;
+    border-radius:50%;
+    background: rgba(10,8,7,0.72);
+    border: 2px solid rgba(216,209,194,0.3);
+    color: var(--bone);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    backdrop-filter: blur(6px);
+    transition: transform .1s ease, background-color .1s ease;
+  }
+  #mReloadBtn:active, #mPushBtn:active{
+    transform: scale(0.9);
+    background: rgba(201,138,46,0.5);
+  }
+  #mReloadBtn{ bottom: 170px; right: 32px; }
+  #mPushBtn{ bottom: 170px; left: 32px; }
+
+  /* Mobile Call Button (radio topilgandan keyin) */
+  #mCallBtn{
+    position:absolute; bottom: 170px; right: 90px; z-index:8;
+    display:none;
+    padding: 10px 14px;
+    background: rgba(10,8,7,0.8);
+    border: 2px solid var(--blood-hot);
+    border-radius: 12px;
+    color: var(--bone);
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    cursor:pointer;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    backdrop-filter: blur(6px);
+    animation: mCallPulse 1.4s ease-in-out infinite;
+  }
+  #mCallBtn.show{ display:flex; }
+  #mCallBtn .m-call-icon{ font-size:18px; line-height:1; }
+  #mCallBtn:active{ transform: scale(0.94); background: rgba(163,47,34,0.7); }
+  @keyframes mCallPulse{
+    0%,100%{ box-shadow: 0 0 0 rgba(224,82,60,0); }
+    50%{ box-shadow: 0 0 22px rgba(224,82,60,0.75); }
+  }
+
+  /* Mobile heli timer */
+  #mHeliTimer{
+    position:absolute; top: 14px; left: 50%; transform: translateX(-50%);
+    z-index:8;
+    display:none;
+    background: rgba(10,8,7,0.8);
+    padding: 6px 14px;
+    border: 2px solid var(--amber);
+    border-radius: 8px;
+    color: var(--amber);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    backdrop-filter: blur(6px);
+    white-space: nowrap;
+  }
+  #mHeliTimer.show{ display:block; }
+  #mHeliTimer.horde{
+    border-color: var(--blood-hot);
+    color: var(--blood-hot);
+    animation: mCallPulse 1.2s ease-in-out infinite;
+  }
+
+  /* Banner — telefonda kichikroq */
+  #center-banner{
+    font-size: 22px;
+    letter-spacing: 3px;
+    top: 42%;
+  }
+
+  /* Tank matni */
+  #tank-alert .tank-text{
+    font-size: clamp(36px, 14vw, 72px);
+    letter-spacing: 6px;
+  }
+
+  /* Game Over panel */
+  #gameOver .panel{
+    padding: 26px 30px;
+  }
+  #gameOver .title{
+    font-size: clamp(34px, 10vw, 54px);
+  }
+}
+
+/* Kichik telefonlar uchun */
+@media (pointer: coarse) and (max-width: 500px) {
+  .m-joy{ width: 110px; height: 110px; }
+  .m-joy-base{ width: 110px; height: 110px; }
+  .m-joy-knob{ width: 50px; height: 50px; }
+
+  #mMoveZone{ bottom: 18px; left: 18px; }
+  #mFireZone{ bottom: 18px; right: 18px; }
+
+  .m-slot{ width: 48px; height: 48px; border-radius: 12px; }
+  .m-slot-icon{ width:22px; height:22px; }
+  .m-slot-ammo{ font-size:9px; }
+
+  #mPauseBtn{ width:48px; height:48px; }
+  #mSlots{ top: 72px; right: 10px; gap:6px; }
+
+  .m-health-outer{ width: 140px; height: 22px; }
+  .m-health-num{ font-size: 12px; }
+
+  #mReloadBtn{ bottom: 145px; right: 24px; width:42px; height:42px; }
+  #mPushBtn{ bottom: 145px; left: 24px; width:42px; height:42px; }
+  #mCallBtn{ bottom: 145px; right: 78px; padding:8px 10px; font-size:10px; }
+}

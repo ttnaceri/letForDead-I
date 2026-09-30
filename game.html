@@ -2,8 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>OUTBREAK: Holdout</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="theme-color" content="#0d0b0a" />
+<title>Let For Dead</title>
 <link href="https://fonts.googleapis.com/css2?family=Staatliches&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="game.css">
 </head>
@@ -11,8 +14,13 @@
 <div id="game-container">
   <canvas id="gameCanvas"></canvas>
   <div id="horde-alert"></div>
+  <div id="vomit-overlay"></div>
   <div id="vignette"></div>
   <div id="damage-flash"></div>
+
+  <div id="tank-alert">
+    <div class="tank-text">TANK INCOMING</div>
+  </div>
 
   <div id="autoModeTag">AUTO MODE</div>
 
@@ -24,70 +32,179 @@
     </div>
   </div>
 
-  <div id="hud">
-    <div class="hud-col">
-      <div class="health-row">
-        <div class="health-outer"><div class="health-inner" id="healthBar"></div></div>
-        <span class="health-num" id="healthNum">100</span>
+  <!-- ==================== DESKTOP HUD ==================== -->
+  <div id="desktopHud">
+    <div id="hud">
+      <div class="hud-col">
+        <div class="health-row">
+          <div class="health-outer"><div class="health-inner" id="healthBar"></div></div>
+          <span class="health-num" id="healthNum">100</span>
+        </div>
+        <div class="weapon-row" id="weaponRow">Pistol</div>
       </div>
-      <div class="weapon-row" id="weaponRow">Pistol</div>
+      <div class="hud-col right">
+        <div class="score-row" id="scoreRow">Score 0</div>
+        <div class="wave-row">Kills <span class="num" id="killsNum">0</span> — <span id="zombiesLeft">0</span> alive</div>
+      </div>
     </div>
-    <div class="hud-col right">
-      <div class="score-row" id="scoreRow">Score 0</div>
-      <div class="wave-row">Kills <span class="num" id="killsNum">0</span> — <span id="zombiesLeft">0</span> alive</div>
+
+    <div id="heliTimer"></div>
+
+    <div id="ammoHud">
+      <span class="w" id="ammoWeapon">Pistol</span>
+      <span class="a" id="ammoCount">7 / ∞</span>
+      <span class="reload" id="reloadTag"></span>
     </div>
+
+    <div id="slotsHud">
+      <div class="slot" data-slot="1">
+        <div class="slot-key">1</div>
+        <div class="slot-info">
+          <div class="slot-name" id="slot1Name">Shotgun</div>
+          <div class="slot-sub" id="slot1Sub">0</div>
+        </div>
+      </div>
+      <div class="slot active" data-slot="2">
+        <div class="slot-key">2</div>
+        <div class="slot-info">
+          <div class="slot-name" id="slot2Name">Pistol</div>
+          <div class="slot-sub" id="slot2Sub">∞</div>
+        </div>
+      </div>
+      <div class="slot" data-slot="3">
+        <div class="slot-key">3</div>
+        <div class="slot-info">
+          <div class="slot-name" id="slot3Name">AID Kit</div>
+          <div class="slot-sub" id="slot3Sub">0</div>
+        </div>
+      </div>
+      <div class="slot" data-slot="4">
+        <div class="slot-key">4</div>
+        <div class="slot-info">
+          <div class="slot-name" id="slot4Name">Grenade</div>
+          <div class="slot-sub" id="slot4Sub">0</div>
+        </div>
+      </div>
+      <div class="slot" data-slot="5">
+        <div class="slot-key">5</div>
+        <div class="slot-info">
+          <div class="slot-name" id="slot5Name">Syringe</div>
+          <div class="slot-sub" id="slot5Sub">0</div>
+        </div>
+      </div>
+    </div>
+
+    <button id="callBtn" type="button">
+      <span class="key">E</span> <span id="callBtnLabel">Call Helicopter</span>
+    </button>
   </div>
 
-  <div id="heliTimer"></div>
+  <!-- ==================== MOBILE HUD ==================== -->
+  <div id="mobileHud">
 
-  <div id="ammoHud">
-    <span class="w" id="ammoWeapon">Pistol</span>
-    <span class="a" id="ammoCount">7 / ∞</span>
-    <span class="reload" id="reloadTag"></span>
+    <!-- TOP-LEFT: Health + Kills -->
+    <div id="mTopLeft">
+      <div class="m-health-outer">
+        <div class="m-health-inner" id="mHealthBar"></div>
+        <span class="m-health-num" id="mHealthNum">100</span>
+      </div>
+      <div class="m-kills">
+        <span class="m-kills-icon">☠</span>
+        <span class="m-kills-num" id="mKillsNum">0</span>
+      </div>
+    </div>
+
+    <!-- TOP-RIGHT: Pause button -->
+    <button id="mPauseBtn" type="button" aria-label="Pause">
+      <svg viewBox="0 0 24 24" width="28" height="28">
+        <rect x="6" y="5" width="4" height="14" fill="currentColor"/>
+        <rect x="14" y="5" width="4" height="14" fill="currentColor"/>
+      </svg>
+    </button>
+
+    <!-- BELOW PAUSE: Weapon slots (vertical) -->
+    <div id="mSlots">
+      <button class="m-slot" data-slot="1" aria-label="Slot 1">
+        <div class="m-slot-icon">
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <path d="M2 9h14v3h4v2h-4v3H9v-3H2z" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="m-slot-ammo" id="mSlot1Ammo">0</div>
+      </button>
+      <button class="m-slot active" data-slot="2" aria-label="Slot 2">
+        <div class="m-slot-icon">
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <path d="M4 8h9v3h3v2h-3v1H8v3H4v-3H2v-3h2z" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="m-slot-ammo" id="mSlot2Ammo">∞</div>
+      </button>
+      <button class="m-slot" data-slot="3" aria-label="Slot 3 (AID)">
+        <div class="m-slot-icon">
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <path d="M9 3h6v5h5v6h-5v5H9v-5H4V8h5z" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="m-slot-ammo" id="mSlot3Ammo">0</div>
+      </button>
+      <button class="m-slot" data-slot="4" aria-label="Slot 4 (Grenade)">
+        <div class="m-slot-icon">
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <circle cx="12" cy="14" r="7" fill="currentColor"/>
+            <rect x="10" y="3" width="4" height="3" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="m-slot-ammo" id="mSlot4Ammo">0</div>
+      </button>
+      <button class="m-slot" data-slot="5" aria-label="Slot 5 (Syringe)">
+        <div class="m-slot-icon">
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <path d="M14 2l2 2-2 2 4 4 2-2 2 2-6 6-2-2 2-2-4-4-2 2-2-2z" fill="currentColor"/>
+            <path d="M3 21l6-6 2 2-6 6z" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="m-slot-ammo" id="mSlot5Ammo">0</div>
+      </button>
+    </div>
+
+    <!-- BOTTOM-LEFT: Move joystick -->
+    <div id="mMoveZone">
+      <div class="m-joy" id="mMoveJoy">
+        <div class="m-joy-base"></div>
+        <div class="m-joy-knob" id="mMoveKnob"></div>
+      </div>
+    </div>
+
+    <!-- BOTTOM-RIGHT: Aim/Fire joystick -->
+    <div id="mFireZone">
+      <div class="m-joy" id="mFireJoy">
+        <div class="m-joy-base m-fire-base"></div>
+        <div class="m-joy-knob m-fire-knob" id="mFireKnob"></div>
+      </div>
+    </div>
+
+    <!-- Reload / Push buttons (kichik) -->
+    <button id="mReloadBtn" type="button" aria-label="Reload">
+      <svg viewBox="0 0 24 24" width="22" height="22">
+        <path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z" fill="currentColor"/>
+      </svg>
+    </button>
+    <button id="mPushBtn" type="button" aria-label="Push">
+      <svg viewBox="0 0 24 24" width="22" height="22">
+        <path d="M13 2L4 13h6v9l9-11h-6z" fill="currentColor"/>
+      </svg>
+    </button>
+
+    <!-- Mobile Call Helicopter (radio topilgandan keyin) -->
+    <button id="mCallBtn" type="button">
+      <span class="m-call-icon">📻</span>
+      <span id="mCallLabel">Call</span>
+    </button>
+
+    <!-- Mobile heli timer -->
+    <div id="mHeliTimer"></div>
   </div>
-
-  <!-- Slot HUD -->
-  <div id="slotsHud">
-    <div class="slot" data-slot="1">
-      <div class="slot-key">1</div>
-      <div class="slot-info">
-        <div class="slot-name" id="slot1Name">Shotgun</div>
-        <div class="slot-sub" id="slot1Sub">0</div>
-      </div>
-    </div>
-    <div class="slot active" data-slot="2">
-      <div class="slot-key">2</div>
-      <div class="slot-info">
-        <div class="slot-name" id="slot2Name">Pistol</div>
-        <div class="slot-sub" id="slot2Sub">∞</div>
-      </div>
-    </div>
-    <div class="slot" data-slot="3">
-      <div class="slot-key">3</div>
-      <div class="slot-info">
-        <div class="slot-name" id="slot3Name">AID Kit</div>
-        <div class="slot-sub" id="slot3Sub">0</div>
-      </div>
-    </div>
-    <div class="slot" data-slot="4">
-      <div class="slot-key">4</div>
-      <div class="slot-info">
-        <div class="slot-name" id="slot4Name">Grenade</div>
-        <div class="slot-sub" id="slot4Sub">0</div>
-      </div>
-    </div>
-    <div class="slot" data-slot="5">
-      <div class="slot-key">5</div>
-      <div class="slot-info">
-        <div class="slot-name" id="slot5Name">Syringe</div>
-        <div class="slot-sub" id="slot5Sub">0</div>
-      </div>
-    </div>
-  </div>
-
-  <button id="callBtn" type="button">
-    <span class="key">E</span> <span id="callBtnLabel">Call Helicopter</span>
-  </button>
 
   <div id="center-banner"></div>
 
@@ -104,7 +221,6 @@
   </div>
 </div>
 
-<!-- Modul tartibi muhim: avval data/logika, keyin main -->
 <script src="audio.js"></script>
 <script src="music.js"></script>
 <script src="world.js"></script>
@@ -112,6 +228,7 @@
 <script src="zombies.js"></script>
 <script src="items.js"></script>
 <script src="ai.js"></script>
+<script src="touch.js"></script>
 <script src="game.js"></script>
 </body>
 </html>

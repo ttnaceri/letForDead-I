@@ -818,6 +818,43 @@ window.Zombies = (function(){
     }
   }
 
+    // ============================================================
+  // TANK SPAWN — maxsus joydan chaqiriladi
+  // ============================================================
+  function spawnTankFromEdge(game, canvasW, canvasH){
+    var p = game.player;
+    var ang = Math.random() * Math.PI * 2;
+    var dist = Math.hypot(canvasW, canvasH) * 0.6 + 100;
+    var x = p.x + Math.cos(ang) * dist;
+    var y = p.y + Math.sin(ang) * dist;
+    var cfg = TYPES.tank;
+
+    var tank = {
+      type: 'tank',
+      x: x, y: y,
+      r: cfg.r,
+      hp: cfg.hp, maxHp: cfg.hp,
+      speed: cfg.speed, dmg: cfg.dmg,
+      hitFlash: 0,
+      target: null, targetLockTimer: 0,
+      wanderAngle: Math.random() * Math.PI * 2,
+      wanderTimer: 0,
+      spitCooldown: 0,
+      pounceTimer: 0, isPouncing: false, pounceDx: 0, pounceDy: 0,
+      chargerTimer: 0, isCharging: false, chargeDX: 0, chargeDY: 0,
+      witchAggro: false, clawCooldown: 0,
+      tankAttackTimer: 0,
+      tankRockTimer: 120 + Math.random()*120,
+      tongueCooldown: 0, tongue: null,
+      pushVX: 0, pushVY: 0,
+      isSpecialTank: true,       // maxsus tank (belgi)
+      entranceEffect: 60,        // kirish effekti (60 frame)
+      announced: false
+    };
+    game.zombies.push(tank);
+    return tank;
+  }
+
   return {
     TYPES: TYPES,
     get: get,
@@ -829,6 +866,7 @@ window.Zombies = (function(){
     dropLoot: dropLoot,
     spawnParticles: spawnParticles,
     damagePlayer: damagePlayer,
-    damageCompanion: damageCompanion
+    damageCompanion: damageCompanion,
+    spawnTankFromEdge: spawnTankFromEdge
   };
 })();
