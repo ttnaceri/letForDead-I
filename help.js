@@ -18,7 +18,7 @@ window.Help = (function(){
   // ============================================================
   // ⏱️ VAQTLAR
   // ============================================================
-  var HELI_ARRIVE_FRAMES = 10 * 60;   // 10 sekund (test)
+  var HELI_ARRIVE_FRAMES = 60 * 60;
   var CALLING_FRAMES = 60;             // 1 sekund
   var TANK_SPAWN_DELAY = 180;          // 3 sekund
   var BOARDING_DURATION = 90;          // 1.5 sekund

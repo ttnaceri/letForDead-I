@@ -3,17 +3,22 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Let For Dead" />
 <meta name="theme-color" content="#0d0b0a" />
-<title>Let For Dead I</title>
+<meta name="description" content="Top-down zombie survival shooter" />
+<meta name="format-detection" content="telephone=no" />
+
+<title>Let For Dead</title>
+
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
 <link href="https://fonts.googleapis.com/css2?family=Staatliches&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="game.css">
-<link rel="manifest" href="manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Let For Dead">
-<link rel="apple-touch-icon" href="image/letfordead.png">
 </head>
 <body>
 <div id="game-container">
@@ -102,11 +107,16 @@
     <button id="callBtn" type="button">
       <span class="key">E</span> <span id="callBtnLabel">Call Helicopter</span>
     </button>
+
+    <button id="fullscreenBtn" type="button" title="Fullscreen (F)">
+      <svg viewBox="0 0 24 24" width="20" height="20">
+        <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" fill="currentColor"/>
+      </svg>
+    </button>
   </div>
 
   <!-- ==================== MOBILE HUD ==================== -->
   <div id="mobileHud">
-
     <div id="mTopLeft">
       <div class="m-health-outer">
         <div class="m-health-inner" id="mHealthBar"></div>
@@ -127,45 +137,23 @@
 
     <div id="mSlots">
       <button class="m-slot" data-slot="1" aria-label="Slot 1">
-        <div class="m-slot-icon">
-          <svg viewBox="0 0 24 24" width="24" height="24">
-            <path d="M2 9h14v3h4v2h-4v3H9v-3H2z" fill="currentColor"/>
-          </svg>
-        </div>
+        <svg viewBox="0 0 24 24" width="24" height="24"><path d="M2 9h14v3h4v2h-4v3H9v-3H2z" fill="currentColor"/></svg>
         <div class="m-slot-ammo" id="mSlot1Ammo">0</div>
       </button>
       <button class="m-slot active" data-slot="2" aria-label="Slot 2">
-        <div class="m-slot-icon">
-          <svg viewBox="0 0 24 24" width="24" height="24">
-            <path d="M4 8h9v3h3v2h-3v1H8v3H4v-3H2v-3h2z" fill="currentColor"/>
-          </svg>
-        </div>
+        <svg viewBox="0 0 24 24" width="24" height="24"><path d="M4 8h9v3h3v2h-3v1H8v3H4v-3H2v-3h2z" fill="currentColor"/></svg>
         <div class="m-slot-ammo" id="mSlot2Ammo">∞</div>
       </button>
-      <button class="m-slot" data-slot="3" aria-label="Slot 3 (AID)">
-        <div class="m-slot-icon">
-          <svg viewBox="0 0 24 24" width="24" height="24">
-            <path d="M9 3h6v5h5v6h-5v5H9v-5H4V8h5z" fill="currentColor"/>
-          </svg>
-        </div>
+      <button class="m-slot" data-slot="3" aria-label="Slot 3">
+        <svg viewBox="0 0 24 24" width="24" height="24"><path d="M9 3h6v5h5v6h-5v5H9v-5H4V8h5z" fill="currentColor"/></svg>
         <div class="m-slot-ammo" id="mSlot3Ammo">0</div>
       </button>
-      <button class="m-slot" data-slot="4" aria-label="Slot 4 (Grenade)">
-        <div class="m-slot-icon">
-          <svg viewBox="0 0 24 24" width="24" height="24">
-            <circle cx="12" cy="14" r="7" fill="currentColor"/>
-            <rect x="10" y="3" width="4" height="3" fill="currentColor"/>
-          </svg>
-        </div>
+      <button class="m-slot" data-slot="4" aria-label="Slot 4">
+        <svg viewBox="0 0 24 24" width="24" height="24"><circle cx="12" cy="14" r="7" fill="currentColor"/><rect x="10" y="3" width="4" height="3" fill="currentColor"/></svg>
         <div class="m-slot-ammo" id="mSlot4Ammo">0</div>
       </button>
-      <button class="m-slot" data-slot="5" aria-label="Slot 5 (Syringe)">
-        <div class="m-slot-icon">
-          <svg viewBox="0 0 24 24" width="24" height="24">
-            <path d="M14 2l2 2-2 2 4 4 2-2 2 2-6 6-2-2 2-2-4-4-2 2-2-2z" fill="currentColor"/>
-            <path d="M3 21l6-6 2 2-6 6z" fill="currentColor"/>
-          </svg>
-        </div>
+      <button class="m-slot" data-slot="5" aria-label="Slot 5">
+        <svg viewBox="0 0 24 24" width="24" height="24"><path d="M14 2l2 2-2 2 4 4 2-2 2 2-6 6-2-2 2-2-4-4-2 2-2-2z" fill="currentColor"/></svg>
         <div class="m-slot-ammo" id="mSlot5Ammo">0</div>
       </button>
     </div>
@@ -185,14 +173,13 @@
     </div>
 
     <button id="mReloadBtn" type="button" aria-label="Reload">
-      <svg viewBox="0 0 24 24" width="22" height="22">
-        <path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z" fill="currentColor"/>
-      </svg>
+      <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z" fill="currentColor"/></svg>
     </button>
     <button id="mPushBtn" type="button" aria-label="Push">
-      <svg viewBox="0 0 24 24" width="22" height="22">
-        <path d="M13 2L4 13h6v9l9-11h-6z" fill="currentColor"/>
-      </svg>
+      <svg viewBox="0 0 24 24" width="22" height="22"><path d="M13 2L4 13h6v9l9-11h-6z" fill="currentColor"/></svg>
+    </button>
+    <button id="mInteractBtn" type="button" aria-label="Interact">
+      <span style="font-size:20px;font-weight:bold;">E</span>
     </button>
 
     <button id="mCallBtn" type="button">
@@ -217,49 +204,36 @@
     </div>
   </div>
 
-  <!-- ==================== END CREDITS ==================== -->
   <div id="endCredits">
     <div class="credits-scroll" id="creditsScroll">
       <div class="credits-block">
         <div class="credits-title">LET FOR DEAD</div>
         <div class="credits-sub">A Survival Horror</div>
       </div>
-
       <div class="credits-block">
         <div class="credits-label">— GAME DESIGN —</div>
         <div class="credits-name">You</div>
       </div>
-
       <div class="credits-block">
         <div class="credits-label">— LEAD PROGRAMMER —</div>
         <div class="credits-name">You</div>
       </div>
-
       <div class="credits-block">
         <div class="credits-label">— ART &amp; VISUALS —</div>
         <div class="credits-name">You</div>
       </div>
-
       <div class="credits-block">
         <div class="credits-label">— SOUND DESIGN —</div>
         <div class="credits-name">You</div>
       </div>
-
       <div class="credits-block">
         <div class="credits-label">— SPECIAL THANKS —</div>
         <div class="credits-name">Left 4 Dead 2</div>
         <div class="credits-name">Valve</div>
       </div>
-
-      <div class="credits-block">
-        <div class="credits-label">— INSPIRED BY —</div>
-        <div class="credits-name">Left 4 Dead 2</div>
-      </div>
-
       <div class="credits-block">
         <div class="credits-title-small">THANK YOU FOR PLAYING</div>
       </div>
-
       <div class="credits-block">
         <div class="credits-final">🧟</div>
         <div class="credits-name">Stay safe out there.</div>
@@ -269,9 +243,22 @@
   </div>
 </div>
 
+<!-- Offline indikator -->
+<div id="offlineIndicator">
+  <span>⚠ Offline</span>
+</div>
+
+<!-- Yuklanmoqda -->
+<div id="loadingScreen">
+  <div class="loading-inner">
+    <div class="loading-title">LET FOR DEAD</div>
+    <div class="loading-bar"><div class="loading-bar-inner" id="loadingBarInner"></div></div>
+    <div class="loading-text" id="loadingText">Loading...</div>
+  </div>
+</div>
+
 <!-- ============================================================
-     SCRIPT TARTIBI — BU JUDA MUHIM!
-     Avval ma'lumot/modul fayllar, keyin game.js.
+     SCRIPT TARTIBI
      ============================================================ -->
 <script src="audio.js"></script>
 <script src="music.js"></script>
@@ -285,50 +272,157 @@
 <script src="hud.js"></script>
 <script src="controller.js"></script>
 <script src="game.js"></script>
+
+<!-- PWA + Fullscreen + Offline detector -->
 <script>
-// Service Worker
-if('serviceWorker' in navigator){
-  window.addEventListener('load', function(){
-    navigator.serviceWorker.register('./sw.js')
-      .then(function(reg){
-        console.log('[SW] Registered:', reg.scope);
-      })
-      .catch(function(err){
-        console.warn('[SW] Register error:', err);
-      });
+(function(){
+  'use strict';
+
+  // ============================================================
+  // SERVICE WORKER
+  // ============================================================
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('./sw.js')
+        .then(function(reg){
+          console.log('[PWA] Service Worker registered:', reg.scope);
+        })
+        .catch(function(err){
+          console.warn('[PWA] Service Worker xato:', err.message);
+        });
+    });
+
+    // Yangi SW topilsa — yangilash
+    navigator.serviceWorker.addEventListener('controllerchange', function(){
+      console.log('[PWA] Controller changed — reloading...');
+      // window.location.reload();
+    });
+  }
+
+  // ============================================================
+  // OFFLINE DETECTOR
+  // ============================================================
+  var offlineEl = document.getElementById('offlineIndicator');
+  function updateOnlineStatus(){
+    if(!offlineEl) return;
+    if(navigator.onLine){
+      offlineEl.classList.remove('show');
+    } else {
+      offlineEl.classList.add('show');
+    }
+  }
+  window.addEventListener('online', updateOnlineStatus);
+  window.addEventListener('offline', updateOnlineStatus);
+  updateOnlineStatus();
+
+  // ============================================================
+  // FULLSCREEN
+  // ============================================================
+  window.toggleFullscreen = function(){
+    var el = document.documentElement;
+    if(!document.fullscreenElement && !document.webkitFullscreenElement){
+      if(el.requestFullscreen){
+        el.requestFullscreen().catch(function(e){ console.warn(e); });
+      } else if(el.webkitRequestFullscreen){
+        el.webkitRequestFullscreen();
+      } else if(el.mozRequestFullScreen){
+        el.mozRequestFullScreen();
+      } else if(el.msRequestFullscreen){
+        el.msRequestFullscreen();
+      }
+    } else {
+      if(document.exitFullscreen){
+        document.exitFullscreen();
+      } else if(document.webkitExitFullscreen){
+        document.webkitExitFullscreen();
+      } else if(document.mozCancelFullScreen){
+        document.mozCancelFullScreen();
+      } else if(document.msExitFullscreen){
+        document.msExitFullscreen();
+      }
+    }
+  };
+
+  // Fullscreen tugmasi
+  var fsBtn = document.getElementById('fullscreenBtn');
+  if(fsBtn){
+    fsBtn.addEventListener('click', function(){ window.toggleFullscreen(); });
+  }
+
+  // F tugmasi
+  window.addEventListener('keydown', function(e){
+    if((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey && !e.altKey){
+      window.toggleFullscreen();
+    }
   });
-}
 
-// === FULLSCREEN ===
-window.toggleFullscreen = function(){
-  var el = document.documentElement;
-  if(!document.fullscreenElement && !document.webkitFullscreenElement){
-    // Fullscreen'ga kirish
-    if(el.requestFullscreen){
-      el.requestFullscreen().catch(function(e){ console.warn(e); });
-    } else if(el.webkitRequestFullscreen){
-      el.webkitRequestFullscreen();
-    } else if(el.mozRequestFullScreen){
-      el.mozRequestFullScreen();
-    } else if(el.msRequestFullscreen){
-      el.msRequestFullscreen();
-    }
-  } else {
-    // Fullscreen'dan chiqish
-    if(document.exitFullscreen){
-      document.exitFullscreen();
-    } else if(document.webkitExitFullscreen){
-      document.webkitExitFullscreen();
+  // ============================================================
+  // ORIENTATION LOCK (mobil uchun)
+  // ============================================================
+  function tryLockOrientation(){
+    if(screen.orientation && screen.orientation.lock){
+      screen.orientation.lock('landscape').catch(function(){
+        // Ba'zi brauzerlar ruxsat bermaydi — bu normal
+      });
     }
   }
-};
 
-// F tugmasi — fullscreen toggle
-window.addEventListener('keydown', function(e){
-  if((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey){
-    window.toggleFullscreen();
-  }
-});
+  // Foydalanuvchi birinchi marta bosganda
+  document.addEventListener('click', function firstClick(){
+    tryLockOrientation();
+    document.removeEventListener('click', firstClick);
+  }, { once: true });
+
+  // ============================================================
+  // LOADING SCREEN — yashirish
+  // ============================================================
+  window.addEventListener('load', function(){
+    var loading = document.getElementById('loadingScreen');
+    if(loading){
+      setTimeout(function(){
+        loading.classList.add('hide');
+        setTimeout(function(){
+          if(loading.parentNode) loading.parentNode.removeChild(loading);
+        }, 500);
+      }, 300);
+    }
+  });
+
+  // ============================================================
+  // ANDROID BACK BUTTON (PWA uchun)
+  // ============================================================
+  window.addEventListener('popstate', function(e){
+    if(window.__game && window.__game.running && !window.__game.over){
+      if(window.Game && window.Game.togglePause) window.Game.togglePause();
+      history.pushState(null, '', location.href);
+    }
+  });
+  history.pushState(null, '', location.href);
+
+  // ============================================================
+  // ORIENTATION CHANGE
+  // ============================================================
+  window.addEventListener('orientationchange', function(){
+    setTimeout(function(){
+      var canvas = document.getElementById('gameCanvas');
+      if(canvas){
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+    }, 300);
+  });
+
+  // ============================================================
+  // VIBRATE (o'yin hodisalari)
+  // ============================================================
+  window.vibrate = function(pattern){
+    if(navigator.vibrate){
+      try{ navigator.vibrate(pattern); }catch(e){}
+    }
+  };
+
+  console.log('[PWA] Initialized');
+})();
 </script>
 </body>
 </html>
