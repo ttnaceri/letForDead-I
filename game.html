@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="theme-color" content="#0d0b0a" />
-<title>Let For Dead</title>
+<title>Let For Dead I</title>
 <link href="https://fonts.googleapis.com/css2?family=Staatliches&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="game.css">
 </head>
@@ -102,7 +102,6 @@
   <!-- ==================== MOBILE HUD ==================== -->
   <div id="mobileHud">
 
-    <!-- TOP-LEFT: Health + Kills -->
     <div id="mTopLeft">
       <div class="m-health-outer">
         <div class="m-health-inner" id="mHealthBar"></div>
@@ -114,7 +113,6 @@
       </div>
     </div>
 
-    <!-- TOP-RIGHT: Pause button -->
     <button id="mPauseBtn" type="button" aria-label="Pause">
       <svg viewBox="0 0 24 24" width="28" height="28">
         <rect x="6" y="5" width="4" height="14" fill="currentColor"/>
@@ -122,7 +120,6 @@
       </svg>
     </button>
 
-    <!-- BELOW PAUSE: Weapon slots (vertical) -->
     <div id="mSlots">
       <button class="m-slot" data-slot="1" aria-label="Slot 1">
         <div class="m-slot-icon">
@@ -168,7 +165,6 @@
       </button>
     </div>
 
-    <!-- BOTTOM-LEFT: Move joystick -->
     <div id="mMoveZone">
       <div class="m-joy" id="mMoveJoy">
         <div class="m-joy-base"></div>
@@ -176,7 +172,6 @@
       </div>
     </div>
 
-    <!-- BOTTOM-RIGHT: Aim/Fire joystick -->
     <div id="mFireZone">
       <div class="m-joy" id="mFireJoy">
         <div class="m-joy-base m-fire-base"></div>
@@ -184,7 +179,6 @@
       </div>
     </div>
 
-    <!-- Reload / Push buttons (kichik) -->
     <button id="mReloadBtn" type="button" aria-label="Reload">
       <svg viewBox="0 0 24 24" width="22" height="22">
         <path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z" fill="currentColor"/>
@@ -196,13 +190,11 @@
       </svg>
     </button>
 
-    <!-- Mobile Call Helicopter (radio topilgandan keyin) -->
     <button id="mCallBtn" type="button">
       <span class="m-call-icon">📻</span>
       <span id="mCallLabel">Call</span>
     </button>
 
-    <!-- Mobile heli timer -->
     <div id="mHeliTimer"></div>
   </div>
 
@@ -219,8 +211,63 @@
       <div class="hint">yoki <b>R</b> tugmasini bosing</div>
     </div>
   </div>
+
+  <!-- ==================== END CREDITS ==================== -->
+  <div id="endCredits">
+    <div class="credits-scroll" id="creditsScroll">
+      <div class="credits-block">
+        <div class="credits-title">LET FOR DEAD</div>
+        <div class="credits-sub">A Survival Horror</div>
+      </div>
+
+      <div class="credits-block">
+        <div class="credits-label">— GAME DESIGN —</div>
+        <div class="credits-name">You</div>
+      </div>
+
+      <div class="credits-block">
+        <div class="credits-label">— LEAD PROGRAMMER —</div>
+        <div class="credits-name">You</div>
+      </div>
+
+      <div class="credits-block">
+        <div class="credits-label">— ART &amp; VISUALS —</div>
+        <div class="credits-name">You</div>
+      </div>
+
+      <div class="credits-block">
+        <div class="credits-label">— SOUND DESIGN —</div>
+        <div class="credits-name">You</div>
+      </div>
+
+      <div class="credits-block">
+        <div class="credits-label">— SPECIAL THANKS —</div>
+        <div class="credits-name">Left 4 Dead 2</div>
+        <div class="credits-name">Valve</div>
+      </div>
+
+      <div class="credits-block">
+        <div class="credits-label">— INSPIRED BY —</div>
+        <div class="credits-name">Left 4 Dead 2</div>
+      </div>
+
+      <div class="credits-block">
+        <div class="credits-title-small">THANK YOU FOR PLAYING</div>
+      </div>
+
+      <div class="credits-block">
+        <div class="credits-final">🧟</div>
+        <div class="credits-name">Stay safe out there.</div>
+      </div>
+    </div>
+    <button id="creditsSkipBtn">SKIP</button>
+  </div>
 </div>
 
+<!-- ============================================================
+     SCRIPT TARTIBI — BU JUDA MUHIM!
+     Avval ma'lumot/modul fayllar, keyin game.js.
+     ============================================================ -->
 <script src="audio.js"></script>
 <script src="music.js"></script>
 <script src="world.js"></script>
@@ -228,7 +275,10 @@
 <script src="zombies.js"></script>
 <script src="items.js"></script>
 <script src="ai.js"></script>
-<script src="touch.js"></script>
+<script src="player.js"></script>
+<script src="help.js"></script>
+<script src="hud.js"></script>
+<script src="controller.js"></script>
 <script src="game.js"></script>
 </body>
 </html>

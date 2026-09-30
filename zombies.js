@@ -132,20 +132,20 @@ window.Zombies = (function(){
 
     // === TANK — bir zarbada uchiradi ===
     tank: {
-      name: 'TANK',
-      r: 42, speed: 1.1, hp: 1500, dmg: 60,
-      color: '#3a2a2a', dark: '#1a1010',
-      score: 300, big: true, pushDist: 2,
-      tank: true,
-      punchRange: 110,
-      punchDamage: 55,
-      punchKnockback: 60,
-      punchCooldown: 90,
-      rockRange: 500,
-      rockSpeed: 8,
-      rockDamage: 40,
-      rockCooldown: 240
-    }
+  name: 'TANK',
+  r: 42, speed: 1.1, hp: 5236, dmg: 60,
+  color: '#3a2a2a', dark: '#1a1010',
+  score: 300, big: true, pushDist: 2,
+  tank: true,
+  punchRange: 110,
+  punchDamage: 55,
+  punchKnockback: 60,
+  punchCooldown: 90,
+  rockRange: 500,
+  rockSpeed: 8,
+  rockDamage: 40,
+  rockCooldown: 240
+}
   };
 
   function get(type){ return TYPES[type] || TYPES.common; }

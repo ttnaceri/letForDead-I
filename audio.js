@@ -59,3 +59,46 @@ window.SFX = (function(){
     tone: tone
   };
 })();
+// ============================================================
+// HORDE SOUND — sounds/horde.mp3
+// ============================================================
+window.SFX.hordeSound = (function(){
+  var hordeAudio = null;
+
+  function load(){
+    try {
+      hordeAudio = new Audio('sounds/horde.mp3');
+      hordeAudio.volume = 0.7;
+      hordeAudio.preload = 'auto';
+      hordeAudio.addEventListener('error', function(){
+        console.warn('[Horde] sounds/horde.mp3 topilmadi');
+      });
+    } catch(e) {
+      console.warn('[Horde] Audio xato:', e);
+    }
+  }
+
+  function play(){
+    if(!hordeAudio){
+      load();
+    }
+    if(!hordeAudio) return;
+    try {
+      hordeAudio.currentTime = 0;
+      var p = hordeAudio.play();
+      if(p && p.catch) p.catch(function(){});
+    } catch(e){}
+  }
+
+  // Auto-load
+  if(document.readyState === 'complete'){
+    load();
+  } else {
+    window.addEventListener('load', load);
+  }
+
+  return {
+    play: play,
+    load: load
+  };
+})();
