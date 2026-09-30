@@ -9,6 +9,11 @@
 <title>Let For Dead I</title>
 <link href="https://fonts.googleapis.com/css2?family=Staatliches&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="game.css">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Let For Dead">
+<link rel="apple-touch-icon" href="image/letfordead.png">
 </head>
 <body>
 <div id="game-container">
@@ -280,5 +285,50 @@
 <script src="hud.js"></script>
 <script src="controller.js"></script>
 <script src="game.js"></script>
+<script>
+// Service Worker
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('./sw.js')
+      .then(function(reg){
+        console.log('[SW] Registered:', reg.scope);
+      })
+      .catch(function(err){
+        console.warn('[SW] Register error:', err);
+      });
+  });
+}
+
+// === FULLSCREEN ===
+window.toggleFullscreen = function(){
+  var el = document.documentElement;
+  if(!document.fullscreenElement && !document.webkitFullscreenElement){
+    // Fullscreen'ga kirish
+    if(el.requestFullscreen){
+      el.requestFullscreen().catch(function(e){ console.warn(e); });
+    } else if(el.webkitRequestFullscreen){
+      el.webkitRequestFullscreen();
+    } else if(el.mozRequestFullScreen){
+      el.mozRequestFullScreen();
+    } else if(el.msRequestFullscreen){
+      el.msRequestFullscreen();
+    }
+  } else {
+    // Fullscreen'dan chiqish
+    if(document.exitFullscreen){
+      document.exitFullscreen();
+    } else if(document.webkitExitFullscreen){
+      document.webkitExitFullscreen();
+    }
+  }
+};
+
+// F tugmasi — fullscreen toggle
+window.addEventListener('keydown', function(e){
+  if((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey){
+    window.toggleFullscreen();
+  }
+});
+</script>
 </body>
 </html>
