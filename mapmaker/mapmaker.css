@@ -1,0 +1,375 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #0d0b0a;
+    color: #d8d1c2;
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', 'Courier New', monospace;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  #app {
+    display: flex;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* ============================================================
+     SIDEBAR — Palitra
+     ============================================================ */
+  #sidebar {
+    width: 260px;
+    background: #17130f;
+    border-right: 2px solid #a32f22;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+
+  .sidebar-header {
+    padding: 14px 16px;
+    background: #0d0b0a;
+    border-bottom: 1px solid #2a2418;
+  }
+
+  .sidebar-title {
+    font-family: 'Staatliches', sans-serif;
+    font-size: 22px;
+    letter-spacing: 3px;
+    color: #e0523c;
+    text-shadow: 0 0 10px rgba(224, 82, 60, 0.5);
+  }
+
+  .sidebar-sub {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: #837b6d;
+    margin-top: 2px;
+    text-transform: uppercase;
+  }
+
+  .palette-section {
+    padding: 10px 14px 6px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: #c98a2e;
+    text-transform: uppercase;
+    border-top: 1px solid #2a2418;
+    margin-top: 6px;
+  }
+
+  .palette-section:first-of-type { border-top: none; margin-top: 0; }
+
+  #palette {
+    flex: 1;
+    overflow-y: auto;
+    padding: 6px 10px;
+  }
+
+  #palette::-webkit-scrollbar { width: 6px; }
+  #palette::-webkit-scrollbar-track { background: #0d0b0a; }
+  #palette::-webkit-scrollbar-thumb { background: #a32f22; border-radius: 3px; }
+
+  .tile-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 6px 8px;
+    margin-bottom: 3px;
+    background: #1c1815;
+    border: 1px solid #2a2418;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #d8d1c2;
+    font-family: inherit;
+    font-size: 11px;
+    text-align: left;
+    transition: all 0.1s ease;
+  }
+
+  .tile-btn:hover {
+    background: #2a2418;
+    border-color: #c98a2e;
+  }
+
+  .tile-btn.active {
+    background: #a32f22;
+    border-color: #e0523c;
+    box-shadow: 0 0 12px rgba(224, 82, 60, 0.6);
+    color: #fff;
+  }
+
+  .tile-preview {
+    width: 32px;
+    height: 32px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    image-rendering: pixelated;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .tile-label {
+    flex: 1;
+    line-height: 1.2;
+  }
+
+  .tile-label .name { font-weight: 600; }
+  .tile-label .sub {
+    font-size: 9px;
+    color: #837b6d;
+    letter-spacing: 1px;
+  }
+
+  /* ============================================================
+     TOOLBAR — Yuqori panel
+     ============================================================ */
+  #main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  #toolbar {
+    height: 48px;
+    background: #17130f;
+    border-bottom: 2px solid #a32f22;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 6px;
+    flex-shrink: 0;
+    z-index: 5;
+  }
+
+  .tool-btn {
+    padding: 6px 14px;
+    background: #1c1815;
+    border: 1px solid #2a2418;
+    color: #d8d1c2;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.1s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .tool-btn:hover {
+    background: #2a2418;
+    border-color: #c98a2e;
+  }
+
+  .tool-btn.active {
+    background: #a32f22;
+    border-color: #e0523c;
+    color: #fff;
+  }
+
+  .tool-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .tool-btn .icon {
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  .toolbar-sep {
+    width: 1px;
+    height: 24px;
+    background: #2a2418;
+    margin: 0 6px;
+  }
+
+  .toolbar-spacer { flex: 1; }
+
+  #coord-display {
+    font-size: 11px;
+    color: #c98a2e;
+    letter-spacing: 1px;
+    padding: 0 10px;
+    min-width: 120px;
+    text-align: right;
+  }
+
+  /* ============================================================
+     CANVAS
+     ============================================================ */
+  #canvas-wrap {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: #0d0b0a;
+    cursor: crosshair;
+  }
+
+  #mapCanvas {
+    position: absolute;
+    top: 0; left: 0;
+    image-rendering: pixelated;
+  }
+
+  /* Grid overlay */
+  #gridOverlay {
+    position: absolute;
+    top: 0; left: 0;
+    pointer-events: none;
+  }
+
+  /* ============================================================
+     STATUS BAR — Pastdagi
+     ============================================================ */
+  #statusbar {
+    height: 28px;
+    background: #0d0b0a;
+    border-top: 1px solid #2a2418;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: #837b6d;
+    flex-shrink: 0;
+    gap: 16px;
+  }
+
+  #statusbar .item { display: flex; align-items: center; gap: 6px; }
+  #statusbar .key {
+    background: #1c1815;
+    border: 1px solid #2a2418;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: #c98a2e;
+    font-weight: 600;
+    font-size: 9px;
+  }
+
+  /* ============================================================
+     MODAL — Xarita o'lchami
+     ============================================================ */
+  .modal-bg {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-bg.show { display: flex; }
+
+  .modal {
+    background: #17130f;
+    border: 2px solid #a32f22;
+    border-radius: 6px;
+    padding: 26px 30px;
+    min-width: 340px;
+    box-shadow: 0 0 40px rgba(163, 47, 34, 0.5);
+  }
+
+  .modal h2 {
+    font-family: 'Staatliches', sans-serif;
+    font-size: 22px;
+    letter-spacing: 3px;
+    color: #e0523c;
+    margin-bottom: 18px;
+    text-transform: uppercase;
+  }
+
+  .modal label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: #c98a2e;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+
+  .modal input[type="number"] {
+    width: 100%;
+    padding: 8px 10px;
+    background: #0d0b0a;
+    border: 1px solid #2a2418;
+    color: #d8d1c2;
+    font-family: inherit;
+    font-size: 13px;
+    border-radius: 3px;
+    margin-bottom: 12px;
+  }
+
+  .modal input[type="number"]:focus {
+    outline: none;
+    border-color: #c98a2e;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .modal-actions button {
+    flex: 1;
+    padding: 10px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    cursor: pointer;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+
+  .btn-primary {
+    background: #a32f22;
+    border: 1px solid #e0523c;
+    color: #fff;
+  }
+
+  .btn-primary:hover { background: #c9382a; }
+
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid #2a2418;
+    color: #837b6d;
+  }
+
+  .btn-secondary:hover { background: #1c1815; }
+
+  /* Toast — xabarlar */
+  #toast {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #17130f;
+    border: 2px solid #c98a2e;
+    padding: 10px 22px;
+    border-radius: 6px;
+    color: #d8d1c2;
+    font-size: 12px;
+    letter-spacing: 1px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.25s ease;
+    z-index: 200;
+    box-shadow: 0 0 20px rgba(201, 138, 46, 0.5);
+  }
+
+  #toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }

@@ -16,15 +16,11 @@ window.__canvas = canvas;
 var game = null;
 var pausedByVisibility = false;
 var lastTs = 0;
+var gameStartTime = 0;
 
 var HELI_STATE = {
-  NONE: 'none',
-  CALLING: 'calling',
-  INCOMING: 'incoming',
-  ARRIVED: 'arrived',
-  BOARDING: 'boarding',
-  LEAVING: 'leaving',
-  GONE: 'gone'
+  NONE: 'none', CALLING: 'calling', INCOMING: 'incoming',
+  ARRIVED: 'arrived', BOARDING: 'boarding', LEAVING: 'leaving', GONE: 'gone'
 };
 if(window.Help && window.Help.HELI_STATE){
   HELI_STATE = window.Help.HELI_STATE;
@@ -34,14 +30,8 @@ if(window.Help && window.Help.HELI_STATE){
 // YANGI O'YIN
 // ============================================================
 function newGame(){
-  var ammo, reserve;
-  if(window.Weapons){
-    ammo = window.Weapons.newPlayerAmmo();
-    reserve = window.Weapons.newPlayerReserve();
-  } else {
-    ammo = { pistol: 7, shotgun: 0, rifle: 0, smg: 0, grenadeLauncher: 0, sniper: 0, aid: 0, grenade: 0, pipebomb: 0, molotov: 0, bile: 0, syringe: 0, pills: 0 };
-    reserve = { pistol: 999, shotgun: 0, rifle: 0, smg: 0, grenadeLauncher: 0, sniper: 0 };
-  }
+  var ammo = window.Weapons.newPlayerAmmo();
+  var reserve = window.Weapons.newPlayerReserve();
 
   return {
     running: true, over: false, won: false, paused: false,
@@ -65,43 +55,43 @@ function newGame(){
       speed: 4.3, maxSpeed: 4.3,
       hp: 100, maxHp: 100,
       angle: 0, cooldown: 0,
-      slot1: 'shotgun', slot2: 'pistol', slot3: 'aid',
-      slot4: 'grenade', slot5: 'syringe',
-      currentSlot: 2,
+
+      slot1: 'uzi',
+      slot2: 'pistol',
+      slot3: 'aid',
+      slot4: 'grenade',
+      slot5: 'syringe',
+      currentSlot: 1,
+
       ammo: ammo, reserve: reserve,
       reloading: false, reloadTimer: 0,
       meleeCooldown: 0, hurtCooldown: 0,
       name: 'You', color: '#7ad44a', isPlayer: true,
       hitFlash: 0, pushCooldown: 0,
+
       pinned: null, ridden: null, smoked: null, charged: null,
       vomitTimer: 0, crippled: null,
       knockbackVX: 0, knockbackVY: 0,
-      // === YANGI ===
+
       hasInfiniteAmmo: false,
       hasLaser: false,
       aidHolding: false,
-      aidHoldTimer: 0
+      aidHoldTimer: 0,
+      reviving: null,
+      evacuated: false,
+      invisible: false
     },
 
     companions: [],
 
     heli: {
-      state: HELI_STATE.NONE,
-      timer: 0,
-      x: 0, y: 0,
-      angle: 0,
-      pickupRadius: 140,
-      scale: 3.0,
-      tankWarned: false,
-      hordeSoundPlayed: false,
-      hordeSoundTimer: 0
+      state: HELI_STATE.NONE, timer: 0, x: 0, y: 0, angle: 0,
+      pickupRadius: 140, scale: 3.0, tankWarned: false,
+      hordeSoundPlayed: false, hordeSoundTimer: 0
     },
 
     tank: {
-      spawned: false,
-      alive: null,
-      spawnDelay: 0,
-      killed: false
+      spawned: false, alive: null, spawnDelay: 0, killed: false
     }
   };
 }
@@ -142,12 +132,17 @@ function toggleAutoMode(){
 // RESTART
 // ============================================================
 function restartGame(){
-  if(window.Music) window.Music.stopAll();
+  // Music unlock + tozalash
+  if(window.Music){
+    window.Music.unlock();
+    window.Music.stopAll();
+  }
   if(window.HUD){
     if(window.HUD.stopEndCredits) window.HUD.stopEndCredits();
     if(window.HUD.reset) window.HUD.reset();
   }
 
+  // UI tozalash
   var ids = ['gameOver', 'callBtn', 'heliTimer', 'horde-alert',
              'pauseScreen', 'autoModeTag', 'tank-alert', 'vomit-overlay'];
   for(var i = 0; i < ids.length; i++){
@@ -163,10 +158,16 @@ function restartGame(){
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
+  // Yangi o'yin
   game = newGame();
   window.__game = game;
+  gameStartTime = performance.now();
+
   if(window.AI && window.AI.initCompanions) window.AI.initCompanions(game);
   if(window.Help && window.Help.spawnRadio) window.Help.spawnRadio(game);
+  if(window.Plane && window.Plane.clear) window.Plane.clear();
+  if(window.Missions && window.Missions.hide) window.Missions.hide();
+
   lastTs = performance.now();
 
   if(window.HUD) window.HUD.update(game);
@@ -202,23 +203,50 @@ window.Game.getCurrentWeaponKey = function(){
 window.Game.showBanner = function(t, c){
   if(window.HUD) window.HUD.showBanner(t, c);
 };
+window.Game.loseGame = function(){
+  if(window.Help) window.Help.loseGame(game);
+};
+window.Game.winGame = function(){
+  if(window.Help) window.Help.winGame(game);
+};
+window.Game.updateCallButton = function(){
+  if(window.HUD) window.HUD.updateHeliButton(game);
+};
 
-// === E — Interact (radio / pickup) ===
+// E — Interact (tartibli: radio → pickup → call)
 window.Game.interactKey = function(){
   if(!game) return;
+  console.log('[E] Interact pressed');
 
-  // 1. Radio bormi?
-  if(window.Help && window.Help.tryPickupRadio){
-    if(window.Help.tryPickupRadio(game)) return;
+  // 1. Radio
+  if(!game.hasRadio && window.Help && window.Help.tryPickupRadio){
+    if(window.Help.tryPickupRadio(game)){
+      console.log('[E] Radio picked up');
+      return;
+    }
   }
 
   // 2. Pickup
   if(window.Items && window.Items.tryInteract){
-    window.Items.tryInteract(game);
+    if(window.Items.tryInteract(game)){
+      console.log('[E] Pickup taken');
+      return;
+    }
   }
+
+  // 3. Call helicopter
+  if(game.hasRadio && game.heli && game.heli.state === 'none'){
+    if(window.Help && window.Help.callHelicopter){
+      console.log('[E] Calling helicopter');
+      window.Help.callHelicopter(game);
+      return;
+    }
+  }
+
+  console.log('[E] Nothing to interact with');
 };
 
-// === AID bosib turish ===
+// Hold (AID / Reviver)
 window.Game.startHold = function(){
   if(window.Player && window.Player.startHold) window.Player.startHold(game);
 };
@@ -244,10 +272,8 @@ function update(dt){
       moveX: 0, moveY: 0,
       aimX: 0, aimY: 0, hasAim: false,
       firing: false, pushing: false, reload: false,
-      interact: false,
-      autoMode: game.autoMode,
-      keys: {},
-      isMobile: false
+      interact: false, autoMode: game.autoMode,
+      keys: {}, isMobile: false
     };
   }
 
@@ -273,19 +299,13 @@ function update(dt){
   // 5. BULLETS
   for(var i = game.bullets.length - 1; i >= 0; i--){
     var b = game.bullets[i];
-    b.x += b.dx * dt;
-    b.y += b.dy * dt;
-    b.life -= dt;
+    b.x += b.dx * dt; b.y += b.dy * dt; b.life -= dt;
     if(b.life <= 0){ game.bullets.splice(i, 1); continue; }
-
     for(var j = game.zombies.length - 1; j >= 0; j--){
       var z = game.zombies[j];
       if(Math.hypot(b.x - z.x, b.y - z.y) < z.r){
-        z.hp -= b.dmg;
-        z.hitFlash = 6;
-        if(window.Zombies && window.Zombies.spawnParticles){
-          window.Zombies.spawnParticles(game, b.x, b.y, 5, '#c94a3a', 3);
-        }
+        z.hp -= b.dmg; z.hitFlash = 6;
+        if(window.Zombies) window.Zombies.spawnParticles(game, b.x, b.y, 5, '#c94a3a', 3);
         if(window.SFX) window.SFX.sfx.hit();
         game.bullets.splice(i, 1);
         if(z.hp <= 0 && window.Zombies) window.Zombies.kill(game, j);
@@ -306,34 +326,25 @@ function update(dt){
   // 7. ZOMBIE PROJECTILES
   for(var pi = game.zProjectiles.length - 1; pi >= 0; pi--){
     var pr = game.zProjectiles[pi];
-    pr.x += pr.dx * dt;
-    pr.y += pr.dy * dt;
-    pr.life -= dt;
+    pr.x += pr.dx * dt; pr.y += pr.dy * dt; pr.life -= dt;
     if(pr.life <= 0){ game.zProjectiles.splice(pi, 1); continue; }
-
     if(Math.hypot(pr.x - p.x, pr.y - p.y) < p.r + 5){
       if(window.Zombies) window.Zombies.damagePlayer(game, pr.dmg || 8);
-      if(window.Zombies && window.Zombies.spawnParticles){
-        window.Zombies.spawnParticles(game, pr.x, pr.y, 6,
-          pr.kind === 'rock' ? '#8a6a3a' : '#6b8f3f', 3);
-      }
+      if(window.Zombies) window.Zombies.spawnParticles(game, pr.x, pr.y, 6,
+        pr.kind === 'rock' ? '#8a6a3a' : '#6b8f3f', 3);
       if(pr.kind === 'rock') game.shake = 10;
       game.zProjectiles.splice(pi, 1);
       continue;
     }
-
     var hitC = false;
     for(var ci2 = 0; ci2 < game.companions.length; ci2++){
       var cc = game.companions[ci2];
       if(cc.isDown) continue;
       if(Math.hypot(pr.x - cc.x, pr.y - cc.y) < cc.r + 5){
         if(window.Zombies) window.Zombies.damageCompanion(game, cc, pr.dmg || 8);
-        if(window.Zombies && window.Zombies.spawnParticles){
-          window.Zombies.spawnParticles(game, pr.x, pr.y, 6, '#6b8f3f', 3);
-        }
+        if(window.Zombies) window.Zombies.spawnParticles(game, pr.x, pr.y, 6, '#6b8f3f', 3);
         game.zProjectiles.splice(pi, 1);
-        hitC = true;
-        break;
+        hitC = true; break;
       }
     }
     if(hitC) continue;
@@ -342,10 +353,8 @@ function update(dt){
   // 8. PARTICLES
   for(var qi = game.particles.length - 1; qi >= 0; qi--){
     var pt = game.particles[qi];
-    pt.x += pt.dx * dt;
-    pt.y += pt.dy * dt;
-    pt.dx *= 0.94;
-    pt.dy *= 0.94;
+    pt.x += pt.dx * dt; pt.y += pt.dy * dt;
+    pt.dx *= 0.94; pt.dy *= 0.94;
     pt.life -= dt;
     if(pt.life <= 0) game.particles.splice(qi, 1);
   }
@@ -365,17 +374,22 @@ function update(dt){
     if(window.Help.updateTankSpawn) window.Help.updateTankSpawn(game, dt);
   }
 
-  // 11. SPAWN
+  // 11. PLANE
+  if(window.Plane && window.Plane.update){
+    window.Plane.update(game, dt);
+  }
+
+  // 12. SPAWN
   game.spawnTimer -= dt;
   if(game.spawnTimer <= 0){
     var t = game.elapsed;
-    var rate = Math.max(12, 40 - t * 0.15);   // sekinroq spawn
+    var rate = Math.max(12, 40 - t * 0.15);
     var spawnCount = 1;
 
     if(game.hordeActive && game.heli.state === HELI_STATE.INCOMING){
-      rate = 8;                                 // horde paytida 4 → 8
-      spawnCount = 2;
-      if(Math.random() < 0.4) spawnCount = 3;   // 0.5 → 0.4
+      rate = 18;
+      spawnCount = 1;
+      if(Math.random() < 0.3) spawnCount = 2;
     } else if(game.heli.state === HELI_STATE.INCOMING){
       rate = Math.max(6, rate * 0.6);
     } else if(game.heli.state === HELI_STATE.ARRIVED){
@@ -394,7 +408,7 @@ function update(dt){
     game.spawnTimer = rate * (0.7 + Math.random() * 0.6);
   }
 
-  // 12. HORDE
+  // 13. HORDE
   game.hordeTimer -= dt;
   if(game.hordeTimer <= 0 && !game.hordeActive && game.heli.state === HELI_STATE.NONE){
     game.hordeActive = true;
@@ -414,7 +428,7 @@ function update(dt){
     }
   }
 
-  // 13. RANDOM PICKUPS
+  // 14. RANDOM PICKUPS
   if(Math.random() < 0.0008 && game.pickups.length < 4){
     var ang2 = Math.random() * Math.PI * 2;
     var d2 = 500 + Math.random() * 700;
@@ -437,7 +451,7 @@ function update(dt){
     });
   }
 
-  // 14. GROANS
+  // 15. GROANS
   game.groanTimer -= dt;
   if(game.groanTimer <= 0 && game.zombies.length > 0){
     if(Math.random() < 0.3 && window.SFX) window.SFX.sfx.zombieGroan();
@@ -447,13 +461,13 @@ function update(dt){
   if(game.shake > 0) game.shake -= dt * 0.6;
   if(game.damageFlash > 0) game.damageFlash -= dt * 0.045;
 
-  // 15. CAMERA
+  // 16. CAMERA
   var targetCamX = p.x - canvas.width / 2;
   var targetCamY = p.y - canvas.height / 2;
   game.camera.x += (targetCamX - game.camera.x) * 0.12 * dt;
   game.camera.y += (targetCamY - game.camera.y) * 0.12 * dt;
 
-  // 16. HUD
+  // 17. HUD
   if(window.HUD) window.HUD.update(game);
 }
 
@@ -531,22 +545,17 @@ function drawRadio(){
 
 function drawHelicopter(){
   var h = game.heli;
-  if(h.state === HELI_STATE.NONE ||
-     h.state === HELI_STATE.CALLING ||
-     h.state === HELI_STATE.GONE) return;
+  if(h.state === HELI_STATE.NONE || h.state === HELI_STATE.CALLING || h.state === HELI_STATE.GONE) return;
 
   ctx.save();
   ctx.translate(h.x, h.y);
   ctx.rotate(h.angle);
   ctx.scale(h.scale, h.scale);
-
   ctx.fillStyle = '#2c2a27';
   ctx.beginPath(); ctx.ellipse(0, 0, 32, 16, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillRect(-40, -3, 20, 6);
-
   ctx.fillStyle = '#4a6a8a';
   ctx.beginPath(); ctx.ellipse(18, 0, 10, 8, 0, 0, Math.PI * 2); ctx.fill();
-
   var t = performance.now() / 30;
   ctx.strokeStyle = 'rgba(200,200,200,0.75)';
   ctx.lineWidth = 2.5;
@@ -564,9 +573,7 @@ function drawHelicopter(){
     ctx.strokeStyle = 'rgba(122,212,74,0.6)';
     ctx.lineWidth = 2;
     ctx.setLineDash([8, 8]);
-    ctx.beginPath();
-    ctx.arc(h.x, h.y, h.pickupRadius, 0, Math.PI * 2);
-    ctx.stroke();
+    ctx.beginPath(); ctx.arc(h.x, h.y, h.pickupRadius, 0, Math.PI * 2); ctx.stroke();
     ctx.setLineDash([]);
     ctx.restore();
   }
@@ -584,10 +591,7 @@ function render(){
 
   ctx.save();
   if(game.shake > 0){
-    ctx.translate(
-      (Math.random() - 0.5) * game.shake,
-      (Math.random() - 0.5) * game.shake
-    );
+    ctx.translate((Math.random() - 0.5) * game.shake, (Math.random() - 0.5) * game.shake);
   }
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -597,6 +601,7 @@ function render(){
   ctx.save();
   ctx.translate(-game.camera.x, -game.camera.y);
 
+  // World
   if(window.World && window.World.render){
     window.World.render(ctx, game.camera, canvas.width, canvas.height);
   }
@@ -639,8 +644,7 @@ function render(){
       ctx.fillStyle = '#1c2b18';
       ctx.beginPath(); ctx.arc(0, 0, pk.r + 4, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#7fbf52';
-      ctx.fillRect(-3, -10, 6, 20);
-      ctx.fillRect(-10, -3, 20, 6);
+      ctx.fillRect(-3, -10, 6, 20); ctx.fillRect(-10, -3, 20, 6);
     } else if(pk.type === 'ammo_pistol' || pk.type === 'ammo_patron'){
       ctx.fillStyle = '#2a2418';
       ctx.beginPath(); ctx.arc(0, 0, pk.r + 4, 0, Math.PI * 2); ctx.fill();
@@ -651,7 +655,6 @@ function render(){
       ctx.fillRect(-1, -2, 3, 4);
       ctx.fillRect(3, -2, 3, 4);
       if(pk.type === 'ammo_patron'){
-        // Cheksiz belgisi
         ctx.fillStyle = '#7ad44a';
         ctx.font = 'bold 14px ui-monospace';
         ctx.textAlign = 'center';
@@ -722,6 +725,7 @@ function render(){
     ctx.restore();
   }
 
+  // Radio
   drawRadio();
 
   // Zombie projectiles
@@ -733,7 +737,13 @@ function render(){
     ctx.fill();
   }
 
+  // Helicopter
   drawHelicopter();
+
+  // Planes
+  if(window.Plane && window.Plane.render){
+    window.Plane.render(ctx, game);
+  }
 
   // Zombies
   for(var zi2 = 0; zi2 < game.zombies.length; zi2++){
@@ -812,6 +822,8 @@ function render(){
   // Companions
   for(var cci = 0; cci < game.companions.length; cci++){
     var c = game.companions[cci];
+    if(c.evacuated || c.invisible) continue;
+
     ctx.save();
     ctx.translate(c.x, c.y);
     var cf = c.hitFlash > 0;
@@ -829,44 +841,48 @@ function render(){
     ctx.restore();
   }
 
-  // Player
+  // Player — faqat ko'rinadigan bo'lsa
   var p = game.player;
-  ctx.save();
-  ctx.translate(p.x, p.y);
-  var pf = p.hitFlash > 0;
-  ctx.fillStyle = pf ? '#fff' : '#c9bfa8';
-  ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = pf ? '#ddd' : '#39506b';
-  ctx.beginPath(); ctx.arc(0, p.r * 0.2, p.r * 0.85, 0, Math.PI * 2); ctx.fill();
-  ctx.restore();
+  if(!p.evacuated && !p.invisible){
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    var pf = p.hitFlash > 0;
+    ctx.fillStyle = pf ? '#fff' : '#c9bfa8';
+    ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = pf ? '#ddd' : '#39506b';
+    ctx.beginPath(); ctx.arc(0, p.r * 0.2, p.r * 0.85, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
 
-  ctx.save();
-  ctx.translate(p.x, p.y);
-  ctx.rotate(p.angle);
-  ctx.fillStyle = '#2c2a27';
-  ctx.fillRect(10, -3, 24, 6);
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.angle);
+    ctx.fillStyle = '#2c2a27';
+    ctx.fillRect(10, -3, 24, 6);
 
-  // === LAZER ko'rinishi ===
-  if(p.hasLaser){
-    ctx.strokeStyle = 'rgba(255,50,50,0.9)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(30, 0);
-    ctx.lineTo(600, 0);
-    ctx.stroke();
-    // Lazer nuqtasi
-    ctx.fillStyle = 'rgba(255,80,80,1)';
-    ctx.beginPath();
-    ctx.arc(600, 0, 3, 0, Math.PI * 2);
-    ctx.fill();
+    if(p.hasLaser){
+      ctx.strokeStyle = 'rgba(255,50,50,0.9)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(30, 0);
+      ctx.lineTo(600, 0);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255,80,80,1)';
+      ctx.beginPath();
+      ctx.arc(600, 0, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
   }
-  ctx.restore();
 
+  // Nameplates
   for(var npi = 0; npi < game.companions.length; npi++){
     var cc3 = game.companions[npi];
+    if(cc3.evacuated || cc3.invisible) continue;
     drawNameplate(cc3, cc3.name, cc3.hp, cc3.maxHp, cc3.color, cc3.isDown);
   }
-  drawNameplate(p, 'You', p.hp, p.maxHp, '#7ad44a', false);
+  if(!p.evacuated && !p.invisible){
+    drawNameplate(p, 'You', p.hp, p.maxHp, '#7ad44a', false);
+  }
 
   ctx.restore();
   ctx.restore();
@@ -907,27 +923,22 @@ resizeCanvas();
 
 if(window.Music && window.Music.load){
   window.Music.load();
-  console.log('[Game] Music loaded');
 }
 
 game = newGame();
 window.__game = game;
+gameStartTime = performance.now();
 
-if(window.AI && window.AI.initCompanions){
-  window.AI.initCompanions(game);
-  console.log('[Game] Companions initialized');
-}
-if(window.Help && window.Help.spawnRadio){
-  window.Help.spawnRadio(game);
-  console.log('[Game] Radio spawned');
-}
+if(window.AI && window.AI.initCompanions) window.AI.initCompanions(game);
+if(window.Help && window.Help.spawnRadio) window.Help.spawnRadio(game);
 if(window.HUD) window.HUD.update(game);
 
 if(window.Controller && window.Controller.init){
   window.Controller.init();
-  console.log('[Game] Controller initialized');
-} else {
-  console.warn('[Game] Controller topilmadi!');
+}
+
+if(window.Missions && window.Missions.init){
+  window.Missions.init();
 }
 
 document.addEventListener('visibilitychange', function(){

@@ -50,68 +50,72 @@ window.Controller = (function(){
   }
 
   // ============================================================
-  // KEYBOARD — Esc fix
-  // ============================================================
-  function setupKeyboard(){
-    function keyDownHandler(e){
-      var k = e.key ? e.key.toLowerCase() : '';
-      if(!k) return;
+// KEYBOARD — E fix
+// ============================================================
+function setupKeyboard(){
+  function keyDownHandler(e){
+    var k = e.key ? e.key.toLowerCase() : '';
+    if(!k) return;
 
-      keys[k] = true;
+    keys[k] = true;
 
-      if([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].indexOf(k) !== -1){
-        e.preventDefault();
-      }
-
-      // === ESC — Pause (har doim ishlaydi) ===
-      if(k === 'escape'){
-        e.preventDefault();
-        e.stopPropagation();
-        if(window.Game && window.Game.togglePause){
-          window.Game.togglePause();
-        }
-        return false;
-      }
-
-      var g = window.__game;
-      if(g && g.paused) return;
-
-      if(k === 'q' && !e.repeat){
-        if(window.Game && window.Game.cycleWeapon) window.Game.cycleWeapon();
-      }
-      if(k === 'e' && !e.repeat){
-        // E — yordam chaqirish YOKI pickup olish
-        if(window.Game && window.Game.interactKey) window.Game.interactKey();
-      }
-      if(k === 'r' && !e.repeat){
-        if(g && g.over){
-          if(window.Game && window.Game.restart) window.Game.restart();
-        } else {
-          if(window.Game && window.Game.reloadCurrent) window.Game.reloadCurrent();
-        }
-      }
-      if((k === '1' || k === '2' || k === '3' || k === '4' || k === '5') && !e.repeat){
-        if(window.Game && window.Game.selectSlot) window.Game.selectSlot(parseInt(k, 10));
-      }
-      // Alt+A va Shift+A OLIB TASHLANDI (foydalanuvchi so'radi)
+    if([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].indexOf(k) !== -1){
+      e.preventDefault();
     }
 
-    function keyUpHandler(e){
-      var k = e.key ? e.key.toLowerCase() : '';
-      if(k) keys[k] = false;
+    // ESC — Pause
+    if(k === 'escape'){
+      e.preventDefault();
+      e.stopPropagation();
+      if(window.Game && window.Game.togglePause){
+        window.Game.togglePause();
+      }
+      return false;
     }
 
-    window.addEventListener('keydown', keyDownHandler, true);
-    document.addEventListener('keydown', keyDownHandler, true);
-    window.addEventListener('keyup', keyUpHandler, true);
-    document.addEventListener('keyup', keyUpHandler, true);
+    var g = window.__game;
+    if(g && g.paused) return;
 
-    window.addEventListener('blur', function(){
-      keys = {};
-      mouse.down = false;
-      mouse.rightDown = false;
-    });
+    if(k === 'q' && !e.repeat){
+      if(window.Game && window.Game.cycleWeapon) window.Game.cycleWeapon();
+    }
+
+    // === E — INTERACT (pickup + radio + call) ===
+    if(k === 'e' && !e.repeat){
+      if(window.Game && window.Game.interactKey){
+        window.Game.interactKey();
+      }
+      return;
+    }
+
+    if(k === 'r' && !e.repeat){
+      if(g && g.over){
+        if(window.Game && window.Game.restart) window.Game.restart();
+      } else {
+        if(window.Game && window.Game.reloadCurrent) window.Game.reloadCurrent();
+      }
+    }
+    if((k === '1' || k === '2' || k === '3' || k === '4' || k === '5') && !e.repeat){
+      if(window.Game && window.Game.selectSlot) window.Game.selectSlot(parseInt(k, 10));
+    }
   }
+
+  function keyUpHandler(e){
+    var k = e.key ? e.key.toLowerCase() : '';
+    if(k) keys[k] = false;
+  }
+
+  window.addEventListener('keydown', keyDownHandler, true);
+  document.addEventListener('keydown', keyDownHandler, true);
+  window.addEventListener('keyup', keyUpHandler, true);
+  document.addEventListener('keyup', keyUpHandler, true);
+
+  window.addEventListener('blur', function(){
+    keys = {};
+    mouse.down = false;
+    mouse.rightDown = false;
+  });
+}
 
   // ============================================================
   // MOUSE — bosib turish (AID uchun)

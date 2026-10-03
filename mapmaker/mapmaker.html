@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Let For Dead — Map Maker</title>
+<link rel="stylesheet" href="mapmaker.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ============================================================
+       SIDEBAR — Palitra
+       ============================================================ -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">MAP MAKER</div>
+      <div class="sidebar-sub">Let For Dead</div>
+    </div>
+
+    <div id="palette"></div>
+  </aside>
+
+  <!-- ============================================================
+       MAIN — Toolbar + Canvas
+       ============================================================ -->
+  <div id="main">
+
+    <div id="toolbar">
+      <button class="tool-btn" id="toolBrush" data-tool="brush">
+        <span class="icon">✏️</span> Brush
+      </button>
+      <button class="tool-btn" id="toolErase" data-tool="erase">
+        <span class="icon">🧹</span> Erase
+      </button>
+      <button class="tool-btn" id="toolFill" data-tool="fill">
+        <span class="icon">🪣</span> Fill
+      </button>
+      <button class="tool-btn" id="toolPicker" data-tool="picker">
+        <span class="icon">💧</span> Picker
+      </button>
+
+      <div class="toolbar-sep"></div>
+
+      <button class="tool-btn" id="btnUndo" title="Ctrl+Z">
+        <span class="icon">↶</span> Undo
+      </button>
+      <button class="tool-btn" id="btnRedo" title="Ctrl+Shift+Z">
+        <span class="icon">↷</span> Redo
+      </button>
+
+      <div class="toolbar-sep"></div>
+
+      <button class="tool-btn" id="btnNew">
+        <span class="icon">📄</span> New
+      </button>
+      <button class="tool-btn" id="btnSave">
+        <span class="icon">💾</span> Save
+      </button>
+      <button class="tool-btn" id="btnLoad">
+        <span class="icon">📂</span> Load
+      </button>
+      <button class="tool-btn" id="btnExport">
+        <span class="icon">⬇</span> Export
+      </button>
+
+      <div class="toolbar-sep"></div>
+
+      <button class="tool-btn" id="btnGrid">
+        <span class="icon">▦</span> Grid
+      </button>
+
+      <div class="toolbar-spacer"></div>
+
+      <div id="coord-display">0, 0</div>
+    </div>
+
+    <div id="canvas-wrap">
+      <canvas id="mapCanvas"></canvas>
+      <canvas id="gridOverlay"></canvas>
+    </div>
+
+    <div id="statusbar">
+      <div class="item"><span class="key">LMB</span> Draw</div>
+      <div class="item"><span class="key">RMB</span> Erase</div>
+      <div class="item"><span class="key">MMB</span> Pan</div>
+      <div class="item"><span class="key">Wheel</span> Zoom</div>
+      <div class="item"><span class="key">Ctrl+Z</span> Undo</div>
+      <div class="item"><span class="key">Ctrl+Shift+Z</span> Redo</div>
+      <div class="item"><span class="key">Del</span> Erase cell</div>
+      <div class="item"><span class="key">1-9</span> Quick pick</div>
+      <div class="item" id="statusInfo" style="margin-left:auto; color:#c98a2e;"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL — New Map
+     ============================================================ -->
+<div class="modal-bg" id="newMapModal">
+  <div class="modal">
+    <h2>New Map</h2>
+    <label>Width (cells)</label>
+    <input type="number" id="newMapW" value="40" min="5" max="500">
+    <label>Height (cells)</label>
+    <input type="number" id="newMapH" value="30" min="5" max="500">
+    <div class="modal-actions">
+      <button class="btn-secondary" id="newMapCancel">Cancel</button>
+      <button class="btn-primary" id="newMapCreate">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL — Load Map
+     ============================================================ -->
+<div class="modal-bg" id="loadMapModal">
+  <div class="modal">
+    <h2>Load Map</h2>
+    <label>Paste map JSON</label>
+    <textarea id="loadMapText" style="width:100%;height:200px;padding:8px;background:#0d0b0a;border:1px solid #2a2418;color:#d8d1c2;font-family:inherit;font-size:11px;border-radius:3px;resize:none;"></textarea>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="loadMapCancel">Cancel</button>
+      <button class="btn-primary" id="loadMapConfirm">Load</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="mapmaker.js"></script>
+</body>
+</html>

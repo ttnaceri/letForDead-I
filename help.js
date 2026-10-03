@@ -16,14 +16,14 @@ window.Help = (function(){
   };
 
   // ============================================================
-  // ⏱️ VAQTLAR
+  // VAQTLAR
   // ============================================================
-  var HELI_ARRIVE_FRAMES = 60 * 60;
-  var CALLING_FRAMES = 60;             // 1 sekund
-  var TANK_SPAWN_DELAY = 180;          // 3 sekund
-  var BOARDING_DURATION = 90;          // 1.5 sekund
-  var HORDE_SOUND_DELAY = 3000;        // 3 sekund (ms)
-  var INTERACT_RANGE = 60;             // E bosish masofasi
+  var HELI_ARRIVE_FRAMES = 60 * 60;    // 60 sekund
+  var CALLING_FRAMES = 60;              // 1 sekund
+  var TANK_SPAWN_DELAY = 180;           // 3 sekund
+  var BOARDING_DURATION = 90;           // 1.5 sekund
+  var HORDE_SOUND_DELAY = 3000;         // 3 sekund (ms)
+  var INTERACT_RANGE = 60;
 
   // ============================================================
   // RADIO
@@ -42,14 +42,9 @@ window.Help = (function(){
 
   function updateRadio(game, dt){
     if(!game.radioPickup || game.hasRadio) return;
-    var rp = game.radioPickup;
-    rp.bob += 0.08 * dt;
-    // Radio endi E bilan olinadi (HUD showPrompt ko'rsatadi)
+    game.radioPickup.bob += 0.08 * dt;
   }
 
-  // ============================================================
-  // RADIO OLISH — E bilan
-  // ============================================================
   function tryPickupRadio(game){
     if(!game.radioPickup || game.hasRadio) return false;
     var p = game.player;
@@ -95,9 +90,10 @@ window.Help = (function(){
     if(window.HUD) window.HUD.showBanner('Helicopter called — HORDE INCOMING!', '#e0523c');
     if(window.HUD) window.HUD.update(game);
 
-    // Horde — o'rtacha kuchli
+    // Horde
     game.hordeActive = true;
-    game.hordeCount = 25;   // 40 dan 25 ga tushirildi (juda kuchli emas)
+    game.hordeCount = 12;
+
     var hordeEl = document.getElementById('horde-alert');
     if(hordeEl) hordeEl.classList.add('show');
 
@@ -120,7 +116,7 @@ window.Help = (function(){
 
     if(h.state === HELI_STATE.NONE || h.state === HELI_STATE.GONE) return;
 
-    // === CALLING → INCOMING ===
+    // CALLING → INCOMING
     if(h.state === HELI_STATE.CALLING){
       h.timer -= dt;
       if(h.timer <= 0){
@@ -132,8 +128,7 @@ window.Help = (function(){
         h.x = game.player.x + Math.cos(ang) * 800;
         h.y = game.player.y + Math.sin(ang) * 800;
 
-        console.log('[Heli] CALLING → INCOMING! Frames:', HELI_ARRIVE_FRAMES,
-                    '(' + (HELI_ARRIVE_FRAMES / 60).toFixed(1) + 's)');
+        console.log('[Heli] CALLING → INCOMING!');
 
         if(window.HUD) window.HUD.showBanner('Survive until help arrives', '#c98a2e');
         if(window.HUD) window.HUD.update(game);
@@ -145,17 +140,15 @@ window.Help = (function(){
       return;
     }
 
-    // === INCOMING ===
+    // INCOMING
     if(h.state === HELI_STATE.INCOMING){
       h.timer -= dt;
 
-      // 3 sekunddan keyin horde sound
       if(!h.hordeSoundPlayed){
         h.hordeSoundTimer = (h.hordeSoundTimer || 0) + dt;
         if(h.hordeSoundTimer >= 180){
           h.hordeSoundPlayed = true;
           if(window.SFX && window.SFX.hordeSound && window.SFX.hordeSound.play){
-            console.log('[Horde] sounds/horde.mp3 playing');
             window.SFX.hordeSound.play();
           }
         }
@@ -191,18 +184,18 @@ window.Help = (function(){
       return;
     }
 
-    // === ARRIVED ===
+    // ARRIVED
     if(h.state === HELI_STATE.ARRIVED){
       var p2 = game.player;
       var d2 = Math.hypot(p2.x - h.x, p2.y - h.y);
 
+      // Tank tekshirish
       if(game.tank.alive && game.tank.alive.hp > 0){
         if(!h.tankWarned){
           h.tankWarned = true;
           if(window.HUD) window.HUD.showBanner("They're Coming!", '#ffffff');
         }
       } else if(d2 < h.pickupRadius){
-        // === BOARDING ===
         h.state = HELI_STATE.BOARDING;
         h.timer = BOARDING_DURATION;
         console.log('[Heli] BOARDING!');
@@ -210,23 +203,21 @@ window.Help = (function(){
         if(window.HUD) window.HUD.showBanner('BOARDING...', '#7ad44a');
         if(window.HUD) window.HUD.update(game);
 
-        // afterhelp.mp3
         if(window.Music && window.Music.play){
           window.Music.play('afterhelp', { loop: false });
         }
 
-        // Zombilarni TO'XTATISH
         game.hordeActive = false;
         game.hordeCount = 0;
         var heliEl = document.getElementById('horde-alert');
         if(heliEl) heliEl.classList.remove('show');
 
-        // Barcha zombilarni o'chirish
+        // Zombilarni tozalash
         game.zombies = [];
         game.zProjectiles = [];
         game.thrownItems = [];
 
-        // Playerni "pinned" qilish — harakatlanmaydi
+        // Player bloklanadi
         p2.pinned = {
           zombie: null,
           timer: 999999,
@@ -237,11 +228,10 @@ window.Help = (function(){
       return;
     }
 
-    // === BOARDING ===
+    // BOARDING
     if(h.state === HELI_STATE.BOARDING){
       h.timer -= dt;
       var p3 = game.player;
-      // Heli player ustida turadi
       h.x = p3.x + Math.cos(h.angle) * 20;
       h.y = p3.y + Math.sin(h.angle) * 20;
 
@@ -253,20 +243,24 @@ window.Help = (function(){
       return;
     }
 
-    // === LEAVING ===
+    // LEAVING — player va botlar ko'rinmaydi
     if(h.state === HELI_STATE.LEAVING){
       h.timer -= dt;
-      // Player harakat qilmasin
+
+      // Player heli bilan birga uchadi
       var p4 = game.player;
-      if(p4.pinned && p4.pinned.isBoarding){
-        // Player heli bilan birga ketadi
-        p4.x = h.x - Math.cos(h.angle) * 20;
-        p4.y = h.y - Math.sin(h.angle) * 20;
+      p4.x = h.x - Math.cos(h.angle) * 20;
+      p4.y = h.y - Math.sin(h.angle) * 20;
+
+      // Evacuated — ko'rinmasin
+      p4.evacuated = true;
+      p4.invisible = true;
+
+      for(var i = 0; i < game.companions.length; i++){
+        game.companions[i].evacuated = true;
+        game.companions[i].invisible = true;
       }
 
-      var awayX = h.x - 0;
-      var awayY = h.y - 0;
-      // Yuqoriga uchib ketadi
       h.x += 2 * dt;
       h.y -= 3 * dt;
       h.angle = -Math.PI / 4;
@@ -325,7 +319,22 @@ window.Help = (function(){
     game.over = true;
     game.won = false;
     window.SFX.sfx.death();
-    if(window.Music) window.Music.stopAll();
+
+    if(window.Music){
+      window.Music.unlock();
+      window.Music.stopAll();
+    }
+
+    // Save statistikasi
+    if(window.Save){
+      window.Save.onGameEnd({
+        score: game.score,
+        kills: game.kills,
+        wave: 0,
+        won: false,
+        playTime: game.elapsed * 1000
+      });
+    }
 
     var ids = ['horde-alert', 'vomit-overlay', 'tank-alert'];
     for(var i = 0; i < ids.length; i++){
@@ -347,7 +356,27 @@ window.Help = (function(){
     game.running = false;
     game.over = true;
     game.won = true;
-    if(window.Music) window.Music.stopAll();
+
+    // MUHIM: afterhelp.mp3 davom etadi — Music.lock()
+    if(window.Music){
+      window.Music.lock();
+    }
+
+    // Save statistikasi
+    if(window.Save){
+      window.Save.onGameEnd({
+        score: game.score,
+        kills: game.kills,
+        wave: 0,
+        won: true,
+        playTime: game.elapsed * 1000
+      });
+      // Achivements
+      window.Save.unlockAchievement('rescued');
+      if(game.companions.every(function(c){ return !c.isDown; })){
+        window.Save.unlockAchievement('survivor_all');
+      }
+    }
 
     var ids = ['horde-alert', 'vomit-overlay', 'tank-alert'];
     for(var i = 0; i < ids.length; i++){
@@ -355,6 +384,7 @@ window.Help = (function(){
       if(el) el.classList.remove('show');
     }
 
+    // End credits — 175 sekund
     setTimeout(function(){
       if(window.HUD) window.HUD.startEndCredits();
     }, 800);
@@ -371,6 +401,9 @@ window.Help = (function(){
     }));
   }
 
+  // ============================================================
+  // EXPORT
+  // ============================================================
   return {
     HELI_STATE: HELI_STATE,
     HELI_ARRIVE_FRAMES: HELI_ARRIVE_FRAMES,

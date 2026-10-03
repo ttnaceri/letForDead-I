@@ -493,12 +493,31 @@ window.HUD = (function(){
   }
 
   function showGameOverAfterCredits(){
-    if(window.__pendingGameOver){
-      var po = window.__pendingGameOver;
-      window.__pendingGameOver = null;
-      showGameOver(po.game, po.title, po.status, po.isWin);
-    }
+  if(window.__pendingGameOver){
+    var po = window.__pendingGameOver;
+    window.__pendingGameOver = null;
+    showGameOver(po.game, po.title, po.status, po.isWin);
+
+    // FIX: End credits tugagach music unlock
+    // Lekin afterhelp.mp3 davom etaveradi main menu'ga qaytguncha
+    // Music.stop() faqat restartGame() da chaqiriladi
+    console.log('[HUD] Credits ended, music still playing');
   }
+}
+
+// Restart da music unlock
+function reset(){
+  if(window.Music){
+    window.Music.unlock();
+    window.Music.stopAll();
+  }
+  if(promptEl) promptEl.style.display = 'none';
+  if(aidProgressEl) aidProgressEl.style.display = 'none';
+  clearTimeout(bannerTimeout);
+  clearTimeout(promptTimeout);
+  var cb = document.getElementById('center-banner');
+  if(cb) cb.classList.remove('show');
+}
 
   // ============================================================
   // RESET — restart uchun

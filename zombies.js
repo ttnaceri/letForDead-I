@@ -1,15 +1,15 @@
 // ============================================================
-// zombies.js — Zombie turlari, AI, Special Infected (L4D2)
+// zombies.js — Zombie turlari, AI, Spawn, Kill, Loot
+// Let For Dead
 // ============================================================
 window.Zombies = (function(){
   'use strict';
 
   // ============================================================
-  // ZOMBIE TURLARI
+  // ZOMBIE TYPES
   // ============================================================
   var TYPES = {
-
-    // ---------- COMMON INFECTED ----------
+    // --- Oddiy ---
     common: {
       name: 'Common Infected',
       r: 15, speed: 1.05, hp: 28, dmg: 8,
@@ -29,9 +29,7 @@ window.Zombies = (function(){
       score: 50, big: true, pushDist: 6
     },
 
-    // ---------- SPECIAL INFECTED ----------
-
-    // === SPITTER — uzoqdan kislota tupuradi ===
+    // --- SPITTER ---
     spitter: {
       name: 'Spitter',
       r: 14, speed: 0.9, hp: 26, dmg: 0,
@@ -45,7 +43,7 @@ window.Zombies = (function(){
       spitCooldownMax: 190
     },
 
-    // === SMOKER — tili bilan tortadi ===
+    // --- SMOKER — tili bilan tortadi (L4D2: 4s choke) ---
     smoker: {
       name: 'Smoker',
       r: 16, speed: 1.0, hp: 50, dmg: 12,
@@ -55,12 +53,12 @@ window.Zombies = (function(){
       tongueRange: 380,
       tongueSpeed: 8,
       tonguePullPower: 3.2,
-      tongueChokeDuration: 180,
+      tongueChokeDuration: 240,   // 4 sekund (L4D2)
       tongueDamagePerSec: 6,
       tongueCooldown: 200
     },
 
-    // === BOOMER — yashil kislota purkaydi ===
+    // --- BOOMER ---
     boomer: {
       name: 'Boomer',
       r: 20, speed: 0.85, hp: 40, dmg: 0,
@@ -68,11 +66,11 @@ window.Zombies = (function(){
       score: 30, big: true, pushDist: 14,
       boomer: true,
       vomitRange: 180,
-      vomitDuration: 240,       // ekran yashil bo'ladi 4 sekund
+      vomitDuration: 240,
       vomitBotDuration: 180
     },
 
-    // === HUNTER — sakrab yerga yiqitadi ===
+    // --- HUNTER — sakrab yerga yiqitadi (L4D2: 5s pin) ---
     hunter: {
       name: 'Hunter',
       r: 13, speed: 3.4, hp: 24, dmg: 16,
@@ -82,26 +80,26 @@ window.Zombies = (function(){
       pounceRange: 260,
       pouncePower: 7.5,
       pounceDuration: 26,
-      pinDuration: 300,          // 5 sekund ushlab turadi
+      pinDuration: 300,          // 5 sekund
       pinDamagePerSec: 8
     },
 
-    // === JOCKEY — sakrab boshqaradi ===
+    // --- JOCKEY — sakrab boshqaradi (L4D2: 4s ride) ---
     jockey: {
       name: 'Jockey',
       r: 12, speed: 3.0, hp: 30, dmg: 14,
-      color: '#7a5a5a', dark: '#3a1a1a',
+      color: '#7a5a7a', dark: '#3a1a1a',
       score: 40, big: false, pushDist: 30,
       jockey: true,
       pounceRange: 200,
       pouncePower: 7.0,
       pounceDuration: 26,
-      rideDuration: 280,         // 4.5 sekund ustida o'tiradi
+      rideDuration: 240,          // 4 sekund
       rideDamagePerSec: 10,
       rideSteerSpeed: 3.5
     },
 
-    // === CHARGER — ushlab uradi ===
+    // --- CHARGER ---
     charger: {
       name: 'Charger',
       r: 22, speed: 1.6, hp: 120, dmg: 22,
@@ -116,7 +114,7 @@ window.Zombies = (function(){
       slamRadius: 90
     },
 
-    // === WITCH — bir zarbada emaklatadi ===
+    // --- WITCH ---
     witch: {
       name: 'Witch',
       r: 18, speed: 5.0, hp: 200, dmg: 40,
@@ -126,26 +124,26 @@ window.Zombies = (function(){
       aggroRange: 250,
       clawDamage: 55,
       clawCooldown: 90,
-      crippleDuration: 300,     // 5 sekund emaklaydi
+      crippleDuration: 300,
       crippleSpeedMult: 0.30
     },
 
-    // === TANK — bir zarbada uchiradi ===
+    // --- TANK ---
     tank: {
-  name: 'TANK',
-  r: 42, speed: 1.1, hp: 5236, dmg: 60,
-  color: '#3a2a2a', dark: '#1a1010',
-  score: 300, big: true, pushDist: 2,
-  tank: true,
-  punchRange: 110,
-  punchDamage: 55,
-  punchKnockback: 60,
-  punchCooldown: 90,
-  rockRange: 500,
-  rockSpeed: 8,
-  rockDamage: 40,
-  rockCooldown: 240
-}
+      name: 'TANK',
+      r: 42, speed: 1.1, hp: 5236, dmg: 60,   // 238 pistol o'q
+      color: '#3a2a2a', dark: '#1a1010',
+      score: 300, big: true, pushDist: 2,
+      tank: true,
+      punchRange: 110,
+      punchDamage: 55,
+      punchKnockback: 60,
+      punchCooldown: 90,
+      rockRange: 500,
+      rockSpeed: 8,
+      rockDamage: 40,
+      rockCooldown: 240
+    }
   };
 
   function get(type){ return TYPES[type] || TYPES.common; }
@@ -175,41 +173,27 @@ window.Zombies = (function(){
       target: null, targetLockTimer: 0,
       wanderAngle: Math.random() * Math.PI * 2,
       wanderTimer: 0,
-
-      // Ranged
       spitCooldown: cfg.ranged ? (cfg.spitCooldownMin || 130) : 0,
-
-      // Pouncer (hunter, jockey)
       pounceTimer: 0,
       isPouncing: false,
       pounceDx: 0, pounceDy: 0,
       pounceCooldown: 0,
-
-      // Charger
       chargerTimer: 0,
       isCharging: false,
       chargeDX: 0, chargeDY: 0,
       chargeCooldown: 0,
-
-      // Witch
       witchAggro: false,
       clawCooldown: 0,
-
-      // Tank
       tankAttackTimer: 0,
       tankRockTimer: 120 + Math.random()*120,
-
-      // Smoker
       tongueCooldown: 60,
-      tongue: null,   // {x,y,dx,dy,life,hit}
-
-      // Push
+      tongue: null,
       pushVX: 0, pushVY: 0
     });
   }
 
   // ============================================================
-  // PICK TYPE — vaqtga qarab
+  // PICK TYPE
   // ============================================================
   function pickType(game){
     var r = Math.random();
@@ -217,14 +201,14 @@ window.Zombies = (function(){
     var horde = game.hordeActive && game.heli.state === 'incoming';
 
     if(horde){
-      if(r < 0.25) return 'common';
-      if(r < 0.42) return 'runner';
-      if(r < 0.55) return 'hunter';
-      if(r < 0.64) return 'jockey';
-      if(r < 0.72) return 'spitter';
-      if(r < 0.80) return 'smoker';
-      if(r < 0.86) return 'brute';
-      if(r < 0.92) return 'charger';
+      if(r < 0.30) return 'common';
+      if(r < 0.48) return 'runner';
+      if(r < 0.60) return 'hunter';
+      if(r < 0.68) return 'jockey';
+      if(r < 0.76) return 'spitter';
+      if(r < 0.82) return 'smoker';
+      if(r < 0.88) return 'brute';
+      if(r < 0.93) return 'charger';
       if(r < 0.97) return 'boomer';
       return 'witch';
     }
@@ -235,38 +219,36 @@ window.Zombies = (function(){
       return 'spitter';
     }
     if(t < 90){
-      if(r < 0.55) return 'common';
-      if(r < 0.72) return 'runner';
-      if(r < 0.80) return 'hunter';
-      if(r < 0.86) return 'jockey';
-      if(r < 0.90) return 'spitter';
-      if(r < 0.94) return 'smoker';
-      if(r < 0.98) return 'boomer';
+      if(r < 0.60) return 'common';
+      if(r < 0.78) return 'runner';
+      if(r < 0.86) return 'hunter';
+      if(r < 0.92) return 'jockey';
+      if(r < 0.96) return 'spitter';
+      if(r < 0.98) return 'smoker';
       return 'brute';
     }
     if(t < 200){
-      if(r < 0.40) return 'common';
-      if(r < 0.56) return 'runner';
-      if(r < 0.66) return 'hunter';
-      if(r < 0.72) return 'jockey';
-      if(r < 0.78) return 'spitter';
-      if(r < 0.83) return 'smoker';
-      if(r < 0.88) return 'brute';
-      if(r < 0.92) return 'charger';
-      if(r < 0.96) return 'boomer';
+      if(r < 0.45) return 'common';
+      if(r < 0.62) return 'runner';
+      if(r < 0.72) return 'hunter';
+      if(r < 0.78) return 'jockey';
+      if(r < 0.84) return 'spitter';
+      if(r < 0.89) return 'smoker';
+      if(r < 0.94) return 'brute';
+      if(r < 0.97) return 'charger';
+      if(r < 0.99) return 'boomer';
       return 'witch';
     }
-    // 200s+
-    if(r < 0.30) return 'common';
-    if(r < 0.46) return 'runner';
-    if(r < 0.56) return 'hunter';
-    if(r < 0.62) return 'jockey';
-    if(r < 0.68) return 'spitter';
-    if(r < 0.73) return 'smoker';
-    if(r < 0.79) return 'brute';
-    if(r < 0.84) return 'charger';
-    if(r < 0.88) return 'boomer';
-    if(r < 0.94) return 'witch';
+    if(r < 0.35) return 'common';
+    if(r < 0.52) return 'runner';
+    if(r < 0.62) return 'hunter';
+    if(r < 0.68) return 'jockey';
+    if(r < 0.74) return 'spitter';
+    if(r < 0.79) return 'smoker';
+    if(r < 0.85) return 'brute';
+    if(r < 0.90) return 'charger';
+    if(r < 0.94) return 'boomer';
+    if(r < 0.97) return 'witch';
     return 'tank';
   }
 
@@ -288,7 +270,7 @@ window.Zombies = (function(){
   }
 
   // ============================================================
-  // HARAKAT
+  // HARAKAT YORDAMCHILARI
   // ============================================================
   function moveToward(z, ux, uy, speed, dt){
     z.x += ux * speed * dt;
@@ -310,12 +292,11 @@ window.Zombies = (function(){
   }
 
   // ============================================================
-  // XULQ: Ranged (spitter)
+  // BEHAVIOR: Ranged (spitter)
   // ============================================================
   function behaveRanged(game, z, cfg, dx, dy, dist, ux, uy, speedMul, dt){
     z.spitCooldown -= dt;
     var pref = cfg.preferDist || 260;
-
     if(dist > pref + 20) moveToward(z, ux, uy, z.speed * speedMul, dt);
     else if(dist < pref - 20) moveAway(z, ux, uy, z.speed * speedMul, dt);
     else applyWander(z, ux, uy, dt, 0.7);
@@ -338,20 +319,20 @@ window.Zombies = (function(){
   }
 
   // ============================================================
-  // XULQ: Hunter — sakrab yiqitadi
+  // BEHAVIOR: Hunter — sakrab yiqitadi (L4D2)
   // ============================================================
   function behaveHunter(game, z, cfg, dx, dy, dist, ux, uy, speedMul, dt){
     if(z.isPouncing){
       z.x += z.pounceDx * dt;
       z.y += z.pounceDy * dt;
       z.pounceTimer -= dt;
-      // Pounce paytida tegsa — player pin qilinadi
+
       var p = z.target;
       if(p && p.isPlayer && Math.hypot(p.x-z.x, p.y-z.y) < z.r + p.r + 6){
         if(!game.player.pinned){
           game.player.pinned = {
             zombie: z,
-            timer: cfg.pinDuration || 300,
+            timer: cfg.pinDuration || 300,     // 5 sekund
             damageTimer: 0,
             kind: 'hunter'
           };
@@ -376,7 +357,7 @@ window.Zombies = (function(){
   }
 
   // ============================================================
-  // XULQ: Jockey — sakrab boshqaradi
+  // BEHAVIOR: Jockey — sakrab boshqaradi (L4D2)
   // ============================================================
   function behaveJockey(game, z, cfg, dx, dy, dist, ux, uy, speedMul, dt){
     if(z.isPouncing){
@@ -388,7 +369,7 @@ window.Zombies = (function(){
         if(!game.player.ridden){
           game.player.ridden = {
             zombie: z,
-            timer: cfg.rideDuration || 280,
+            timer: cfg.rideDuration || 240,    // 4 sekund
             damageTimer: 0,
             steerAngle: Math.random() * Math.PI * 2
           };
@@ -399,9 +380,7 @@ window.Zombies = (function(){
       if(z.pounceTimer <= 0) z.isPouncing = false;
       return;
     }
-
     if(z.pounceCooldown > 0) z.pounceCooldown -= dt;
-
     if(dist < (cfg.pounceRange || 200) && z.pounceCooldown <= 0){
       z.isPouncing = true;
       z.pounceTimer = cfg.pounceDuration || 26;
@@ -413,42 +392,25 @@ window.Zombies = (function(){
   }
 
   // ============================================================
-  // XULQ: Boomer — yashil kislota purkaydi
+  // BEHAVIOR: Boomer
   // ============================================================
   function behaveBoomer(game, z, cfg, dx, dy, dist, ux, uy, speedMul, dt){
     moveToward(z, ux, uy, z.speed * speedMul, dt);
-
-    if(dist < (cfg.vomitRange || 180) && z.vomitCooldown == null){
-      z.vomitCooldown = 0;
-    }
     if(z.vomitCooldown > 0) z.vomitCooldown -= dt;
-
     if(dist < (cfg.vomitRange || 180) && (z.vomitCooldown == null || z.vomitCooldown <= 0)){
-      // Purkash
-      z.vomitCooldown = 999;  // bir marta
+      z.vomitCooldown = 999;
       var p = z.target;
-      var ang = Math.atan2(dy, dx);
-
-      // Player bo'lsa — bo'yaladi
-      if(p.isPlayer){
-        game.player.vomitTimer = cfg.vomitDuration || 240;
-        // Ekran effekti
-        document.getElementById('horde-alert').classList.add('show');
-      } else {
-        p.vomitTimer = cfg.vomitBotDuration || 180;
-      }
-
-      // Kislota zarari
+      if(p.isPlayer) game.player.vomitTimer = cfg.vomitDuration || 240;
+      else p.vomitTimer = cfg.vomitBotDuration || 180;
       window.Zombies.damagePlayer(game, 5);
       spawnParticles(game, z.x, z.y, 30, '#7a9a3a', 6);
-      spawnParticles(game, z.x + Math.cos(ang)*40, z.y + Math.sin(ang)*40, 20, '#a3c94a', 5);
       game.shake = 8;
-      z.hp = 0;  // boomer portlaydi
+      z.hp = 0;
     }
   }
 
   // ============================================================
-  // XULQ: Charger — ushlab uradi
+  // BEHAVIOR: Charger
   // ============================================================
   function behaveCharger(game, z, cfg, ux, uy, dist, speedMul, dt){
     z.chargerTimer -= dt;
@@ -458,8 +420,6 @@ window.Zombies = (function(){
       z.x += z.chargeDX * dt;
       z.y += z.chargeDY * dt;
       z.chargerTimer -= dt;
-
-      // Yo'lda playerga tegsa — ushlaydi
       var p = z.target;
       if(p && p.isPlayer && Math.hypot(p.x-z.x, p.y-z.y) < z.r + p.r + 4){
         if(!game.player.charged){
@@ -475,7 +435,6 @@ window.Zombies = (function(){
           z.chargeCooldown = cfg.chargeCooldown || 180;
         }
       }
-
       if(z.chargerTimer <= 0){
         z.isCharging = false;
         z.chargeCooldown = cfg.chargeCooldown || 180;
@@ -494,11 +453,10 @@ window.Zombies = (function(){
   }
 
   // ============================================================
-  // XULQ: Witch — bir zarbada emaklatadi
+  // BEHAVIOR: Witch
   // ============================================================
   function behaveWitch(game, z, cfg, ux, uy, dist, speedMul, dt){
     if(z.clawCooldown > 0) z.clawCooldown -= dt;
-
     if(!z.witchAggro){
       z.wanderTimer -= dt;
       if(z.wanderTimer <= 0){
@@ -510,17 +468,13 @@ window.Zombies = (function(){
       if(dist < (cfg.aggroRange || 250)) z.witchAggro = true;
       return;
     }
-
-    // Aggro — tez yuguradi va uradi
     if(dist > z.r + 20){
       moveToward(z, ux, uy, z.speed * speedMul, dt);
     } else if(z.clawCooldown <= 0){
-      // Claw attack
       z.clawCooldown = cfg.clawCooldown || 90;
       var p = z.target;
       if(p.isPlayer){
         damagePlayer(game, cfg.clawDamage || 55);
-        // Cripple — emaklatish
         game.player.crippled = {
           timer: cfg.crippleDuration || 300,
           speedMult: cfg.crippleSpeedMult || 0.30
@@ -534,20 +488,18 @@ window.Zombies = (function(){
   }
 
   // ============================================================
-  // XULQ: Tank — bir zarbada uchiradi
+  // BEHAVIOR: Tank
   // ============================================================
   function behaveTank(game, z, cfg, ux, uy, dist, dx, dy, speedMul, dt){
     if(z.tankAttackTimer > 0) z.tankAttackTimer -= dt;
     if(z.tankRockTimer > 0) z.tankRockTimer -= dt;
 
-    // Yaqin — musht
     if(dist < (cfg.punchRange || 110)){
       if(z.tankAttackTimer <= 0){
         z.tankAttackTimer = cfg.punchCooldown || 90;
         var p = z.target;
         if(p.isPlayer){
           damagePlayer(game, cfg.punchDamage || 55);
-          // Kuchli knockback — uzoqqa uchiradi
           var kx = (p.x - z.x) / dist;
           var ky = (p.y - z.y) / dist;
           var kb = cfg.punchKnockback || 60;
@@ -560,16 +512,12 @@ window.Zombies = (function(){
           window.SFX.sfx.hurt();
         } else {
           damageCompanion(game, p, cfg.punchDamage || 55);
-          var kx2 = (p.x - z.x) / dist;
-          var ky2 = (p.y - z.y) / dist;
-          p.x += kx2 * 40;
-          p.y += ky2 * 40;
+          p.x += (p.x - z.x) / dist * 40;
+          p.y += (p.y - z.y) / dist * 40;
         }
         spawnParticles(game, z.x + ux*30, z.y + uy*30, 18, '#8a2a20', 6);
       }
-    }
-    // Uzoq — tosh otadi
-    else if(dist < (cfg.rockRange || 500) && z.tankRockTimer <= 0){
+    } else if(dist < (cfg.rockRange || 500) && z.tankRockTimer <= 0){
       z.tankRockTimer = cfg.rockCooldown || 240;
       game.zProjectiles.push({
         x: z.x, y: z.y,
@@ -581,40 +529,35 @@ window.Zombies = (function(){
       });
       window.SFX.sfx.throwItem();
     }
-
     moveToward(z, ux, uy, z.speed * speedMul, dt);
   }
 
   // ============================================================
-  // XULQ: Smoker — tili bilan tortadi
+  // BEHAVIOR: Smoker
   // ============================================================
   function behaveSmoker(game, z, cfg, ux, uy, dist, dt){
     if(z.tongueCooldown > 0) z.tongueCooldown -= dt;
 
-    // Aktiv tongue bormi?
     if(z.tongue){
       var t = z.tongue;
       t.x += t.dx * dt;
       t.y += t.dy * dt;
       t.life -= dt;
-
-      // Player tegsa
       var p = z.target;
       if(!t.hit && p && p.isPlayer){
         if(Math.hypot(p.x - t.x, p.y - t.y) < p.r + 8){
           t.hit = true;
           game.player.smoked = {
             zombie: z,
-            timer: cfg.tongueChokeDuration || 180,
+            timer: cfg.tongueChokeDuration || 240,   // 4 sekund
             damageTimer: 0
           };
           z.tongue = null;
           return;
         }
       }
-
       if(t.life <= 0){ z.tongue = null; return; }
-      return; // Tongue aktiv paytida zombie qimirlamaydi
+      return;
     }
 
     var pref = 320;
@@ -622,7 +565,6 @@ window.Zombies = (function(){
     else if(dist < pref - 30) moveAway(z, ux, uy, z.speed * dt, dt);
     else applyWander(z, ux, uy, dt, 0.5);
 
-    // Tongue otish
     if(z.tongueCooldown <= 0 && dist < (cfg.tongueRange || 380)){
       z.tongueCooldown = cfg.tongueCooldown || 200;
       var ang = Math.atan2(game.player.y - z.y, game.player.x - z.x);
@@ -639,7 +581,7 @@ window.Zombies = (function(){
   }
 
   // ============================================================
-  // XULQ: Common / Runner / Brute
+  // BEHAVIOR: Common / Runner / Brute
   // ============================================================
   function behaveCommon(game, z, ux, uy, speedMul, dt){
     z.wanderTimer -= dt;
@@ -654,12 +596,11 @@ window.Zombies = (function(){
   }
 
   // ============================================================
-  // UPDATE — asosiy AI
+  // UPDATE
   // ============================================================
   function update(game, z, dt){
     var cfg = TYPES[z.type];
 
-    // Push harakat
     if(Math.abs(z.pushVX) > 0.1 || Math.abs(z.pushVY) > 0.1){
       z.x += z.pushVX * dt;
       z.y += z.pushVY * dt;
@@ -667,7 +608,6 @@ window.Zombies = (function(){
       z.pushVY *= 0.85;
     }
 
-    // Target yangilash
     z.targetLockTimer -= dt;
     if(z.targetLockTimer <= 0 || !z.target || z.target.isDown){
       var nt = findNearestTarget(game, z);
@@ -681,10 +621,8 @@ window.Zombies = (function(){
     var dist = Math.hypot(dx, dy) || 1;
     var ux = dx / dist;
     var uy = dy / dist;
+    var speedMul = (game.hordeActive && game.heli.state === 'incoming') ? 1.15 : 1.0;
 
-    var speedMul = (game.hordeActive && game.heli.state === 'incoming') ? 1.20 : 1.0;
-
-    // Xulq tanlash
     if(cfg.smoker)       behaveSmoker(game, z, cfg, ux, uy, dist, dt);
     else if(cfg.hunter)  behaveHunter(game, z, cfg, dx, dy, dist, ux, uy, speedMul, dt);
     else if(cfg.jockey)  behaveJockey(game, z, cfg, dx, dy, dist, ux, uy, speedMul, dt);
@@ -697,7 +635,6 @@ window.Zombies = (function(){
 
     if(z.hitFlash > 0) z.hitFlash -= dt;
 
-    // Contact damage (oddiy zombie)
     var p = z.target;
     var pd = Math.hypot(p.x - z.x, p.y - z.y);
     if(pd < z.r + p.r && z.dmg > 0){
@@ -730,7 +667,6 @@ window.Zombies = (function(){
     game.shake = Math.max(game.shake, cfg.big ? 8 : 4);
     if(cfg.big) window.SFX.sfx.bigZombieDown();
 
-    // Agar player'ni ushlab turgan bo'lsa — bo'shat
     if(game.player.pinned && game.player.pinned.zombie === z) game.player.pinned = null;
     if(game.player.ridden && game.player.ridden.zombie === z) game.player.ridden = null;
     if(game.player.smoked && game.player.smoked.zombie === z) game.player.smoked = null;
@@ -757,7 +693,6 @@ window.Zombies = (function(){
     else if(roll < 0.86) type = 'aid';
     else if(roll < 0.92) type = 'grenade';
     else if(roll < 0.96) type = 'pipebomb';
-    else if(roll < 0.99) type = 'molotov';
     else                 type = 'syringe';
 
     var angle = Math.random() * Math.PI * 2;
@@ -769,7 +704,7 @@ window.Zombies = (function(){
       r: 14,
       bob: Math.random() * Math.PI * 2,
       justDropped: true,
-      dropLife: 90,
+      dropLife: 1200,
       pickupCooldown: 20
     });
   }
@@ -818,8 +753,8 @@ window.Zombies = (function(){
     }
   }
 
-    // ============================================================
-  // TANK SPAWN — maxsus joydan chaqiriladi
+  // ============================================================
+  // TANK SPAWN
   // ============================================================
   function spawnTankFromEdge(game, canvasW, canvasH){
     var p = game.player;
@@ -831,8 +766,7 @@ window.Zombies = (function(){
 
     var tank = {
       type: 'tank',
-      x: x, y: y,
-      r: cfg.r,
+      x: x, y: y, r: cfg.r,
       hp: cfg.hp, maxHp: cfg.hp,
       speed: cfg.speed, dmg: cfg.dmg,
       hitFlash: 0,
@@ -841,14 +775,16 @@ window.Zombies = (function(){
       wanderTimer: 0,
       spitCooldown: 0,
       pounceTimer: 0, isPouncing: false, pounceDx: 0, pounceDy: 0,
+      pounceCooldown: 0,
       chargerTimer: 0, isCharging: false, chargeDX: 0, chargeDY: 0,
+      chargeCooldown: 0,
       witchAggro: false, clawCooldown: 0,
       tankAttackTimer: 0,
       tankRockTimer: 120 + Math.random()*120,
       tongueCooldown: 0, tongue: null,
       pushVX: 0, pushVY: 0,
-      isSpecialTank: true,       // maxsus tank (belgi)
-      entranceEffect: 60,        // kirish effekti (60 frame)
+      isSpecialTank: true,
+      entranceEffect: 60,
       announced: false
     };
     game.zombies.push(tank);
