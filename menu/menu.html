@@ -1,286 +1,338 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Let For Dead I</title>
-    <link rel="stylesheet" href="menu.css">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+
+<!-- ═══════════════════════════════════════════════════════════
+     PWA
+     ═══════════════════════════════════════════════════════════ -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Let For Dead I" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="application-name" content="Let For Dead I" />
+<meta name="theme-color" content="#0d0b0a" />
+<meta name="msapplication-TileColor" content="#0d0b0a" />
+<meta name="msapplication-navbutton-color" content="#0d0b0a" />
+
+<link rel="manifest" href="../manifest.json" />
+<link rel="apple-touch-icon" href="../image/letfordead.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="../image/letfordead.png" />
+<link rel="icon" type="image/png" href="../image/letfordead.png" />
+<link rel="shortcut icon" href="../image/letfordead.png" />
+
+<title>Let For Dead I</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Staatliches&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="menu.css">
 </head>
 <body>
 
-    <!-- Orqa fondagi video -->
-    <video id="bg-video" autoplay loop muted playsinline>
-        <source src="../image/bg.mp4" type="video/mp4">
-    </video>
+<!-- ============================================================
+     BACKGROUND VIDEO
+     ============================================================ -->
+<video id="bg-video" autoplay loop muted playsinline preload="auto">
+  <source src="../image/bg.mp4" type="video/mp4">
+</video>
 
-    <!-- ============================================================
-         ASOSIY MENYU — ESKI DIZAYN
-         ============================================================ -->
-    <div class="menu-container" id="mainMenu">
+<!-- ============================================================
+     MAIN MENU
+     ============================================================ -->
+<div class="menu-container" id="mainMenu">
 
-        <!-- Tepadagi logotip -->
+  <!-- Logo — chap tepada -->
+  <div class="logo-block">
+    <img src="../image/letfordead.png" alt="Let For Dead I" class="logo-image">
+  </div>
 
-        <!-- Pastdagi menyu tugmalari -->
-        <div class="menu-buttons">
-            <button class="menu-btn" data-action="campaign"     data-lang="campaign"></button>
-            <button class="menu-btn" data-action="network"      data-lang="network_game"></button>
-            <button class="menu-btn" data-action="single"       data-lang="single_game"></button>
-            <button class="menu-btn" data-action="achievements" data-lang="achievements"></button>
-            <button class="menu-btn" data-action="settings"     data-lang="settings"></button>
-            <button class="menu-btn" data-action="addons"       data-lang="addons"></button>
-            <button class="menu-btn" data-action="exit"         data-lang="exit"></button>
-        </div>
+  <!-- Tugmalar — o'ngda -->
+  <div class="menu-buttons">
+    <button class="menu-btn" data-action="campaign" data-lang="campaign"></button>
+    <button class="menu-btn" data-action="network" data-lang="network_game"></button>
+    <button class="menu-btn" data-action="single" data-lang="single_game"></button>
+    <button class="menu-btn" data-action="achievements" data-lang="achievements"></button>
+    <button class="menu-btn" data-action="settings" data-lang="settings"></button>
+    <button class="menu-btn" data-action="addons" data-lang="addons"></button>
+    <button class="menu-btn" data-action="exit" data-lang="exit"></button>
+  </div>
+</div>
+
+<!-- ============================================================
+     SETTINGS PAGE
+     ============================================================ -->
+<div class="page-container" id="settingsPage">
+  <div class="page-panel">
+    <div class="page-header">
+      <button class="back-btn" data-back data-lang="back"></button>
+      <h1 class="page-title" data-lang="settings_title"></h1>
     </div>
 
-    <!-- ============================================================
-         SETTINGS PAGE
-         ============================================================ -->
-    <div class="page-container" id="settingsPage">
-        <div class="page-panel">
-            <div class="page-header">
-                <button class="back-btn" data-back data-lang="back"></button>
-                <h1 class="page-title" data-lang="settings_title"></h1>
-            </div>
+    <div class="page-content">
 
-            <div class="page-content">
-                <!-- AUDIO -->
-                <div class="settings-section">
-                    <div class="section-title" data-lang="sound_section"></div>
+      <!-- AUDIO -->
+      <div class="settings-section">
+        <div class="section-title" data-lang="sound_section"></div>
 
-                    <div class="slider-row">
-                        <label data-lang="volume_master"></label>
-                        <input type="range" id="sldMaster" min="0" max="100" value="80" data-setting="volumeMaster">
-                        <span class="slider-value" id="valMaster">80%</span>
-                    </div>
-                    <div class="slider-row">
-                        <label data-lang="volume_music"></label>
-                        <input type="range" id="sldMusic" min="0" max="100" value="60" data-setting="volumeMusic">
-                        <span class="slider-value" id="valMusic">60%</span>
-                    </div>
-                    <div class="slider-row">
-                        <label data-lang="volume_sfx"></label>
-                        <input type="range" id="sldSfx" min="0" max="100" value="80" data-setting="volumeSfx">
-                        <span class="slider-value" id="valSfx">80%</span>
-                    </div>
-                </div>
-
-                <!-- LOBBY MUSIC + LANGUAGE -->
-                <div class="settings-section">
-                    <div class="section-title" data-lang="lobby_music"></div>
-
-                    <div class="select-row">
-                        <label data-lang="lobby_music"></label>
-                        <select id="selLobbyMusic" data-setting="lobbyMusic">
-                            <option value="standard" data-lang-option="music_standard"></option>
-                            <option value="horizon" data-lang-option="music_horizon"></option>
-                        </select>
-                    </div>
-
-                    <div class="section-title" style="margin-top:20px;" data-lang="language"></div>
-
-                    <div class="select-row">
-                        <label data-lang="language"></label>
-                        <select id="selLanguage" data-setting="language">
-                            <option value="eng">English</option>
-                            <option value="rus">Русский</option>
-                            <option value="uzb">O'zbekcha</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- VIDEO -->
-                <div class="settings-section">
-                    <div class="section-title" data-lang="video_section"></div>
-
-                    <div class="slider-row">
-                        <label data-lang="brightness"></label>
-                        <input type="range" id="sldBrightness" min="50" max="150" value="100" data-setting="brightness">
-                        <span class="slider-value" id="valBrightness">100%</span>
-                    </div>
-                    <div class="slider-row">
-                        <label data-lang="gamma"></label>
-                        <input type="range" id="sldGamma" min="50" max="150" value="100" data-setting="gamma">
-                        <span class="slider-value" id="valGamma">100%</span>
-                    </div>
-                    <div class="checkbox-row">
-                        <label>
-                            <input type="checkbox" id="chkScanlines" data-setting="scanlines" checked>
-                            <span data-lang="scanlines"></span>
-                        </label>
-                    </div>
-                    <div class="checkbox-row">
-                        <label>
-                            <input type="checkbox" id="chkVignette" data-setting="vignette" checked>
-                            <span data-lang="vignette"></span>
-                        </label>
-                    </div>
-                    <div class="checkbox-row">
-                        <label>
-                            <input type="checkbox" id="chkBloodOverlay" data-setting="bloodOverlay" checked>
-                            <span data-lang="blood_overlay"></span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- HUD -->
-                <div class="settings-section">
-                    <div class="section-title" data-lang="hud_section"></div>
-
-                    <div class="checkbox-row">
-                        <label>
-                            <input type="checkbox" id="chkHudHealth" data-setting="hudHealth" checked>
-                            <span data-lang="hud_health"></span>
-                        </label>
-                    </div>
-                    <div class="checkbox-row">
-                        <label>
-                            <input type="checkbox" id="chkHudAmmo" data-setting="hudAmmo" checked>
-                            <span data-lang="hud_ammo"></span>
-                        </label>
-                    </div>
-                    <div class="checkbox-row">
-                        <label>
-                            <input type="checkbox" id="chkHudSlots" data-setting="hudSlots" checked>
-                            <span data-lang="hud_slots"></span>
-                        </label>
-                    </div>
-                    <div class="checkbox-row">
-                        <label>
-                            <input type="checkbox" id="chkHudKills" data-setting="hudKills" checked>
-                            <span data-lang="hud_kills"></span>
-                        </label>
-                    </div>
-                    <div class="checkbox-row">
-                        <label>
-                            <input type="checkbox" id="chkHudTimer" data-setting="hudTimer" checked>
-                            <span data-lang="hud_timer"></span>
-                        </label>
-                    </div>
-                    <div class="checkbox-row">
-                        <label>
-                            <input type="checkbox" id="chkHudNames" data-setting="hudNames" checked>
-                            <span data-lang="hud_names"></span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- GAMEPLAY -->
-                <div class="settings-section">
-                    <div class="section-title" data-lang="gameplay_section"></div>
-
-                    <div class="checkbox-row">
-                        <label>
-                            <input type="checkbox" id="chkAutoAim" data-setting="autoAim">
-                            <span data-lang="auto_aim"></span>
-                        </label>
-                    </div>
-                    <div class="checkbox-row">
-                        <label>
-                            <input type="checkbox" id="chkShowFps" data-setting="showFps">
-                            <span data-lang="show_fps"></span>
-                        </label>
-                    </div>
-                    <div class="slider-row">
-                        <label data-lang="difficulty"></label>
-                        <input type="range" id="sldDifficulty" min="0" max="2" value="1" step="1" data-setting="difficulty">
-                        <span class="slider-value" id="valDifficulty">Средний</span>
-                    </div>
-                </div>
-
-                <div class="settings-section">
-                    <button class="reset-btn" id="btnResetSettings" data-lang="reset_settings"></button>
-                </div>
-            </div>
+        <div class="slider-row">
+          <label data-lang="volume_master"></label>
+          <input type="range" id="sldMaster" min="0" max="100" value="80" data-setting="volumeMaster">
+          <span class="slider-value" id="valMaster">80%</span>
         </div>
+
+        <div class="slider-row">
+          <label data-lang="volume_music"></label>
+          <input type="range" id="sldMusic" min="0" max="100" value="60" data-setting="volumeMusic">
+          <span class="slider-value" id="valMusic">60%</span>
+        </div>
+
+        <div class="slider-row">
+          <label data-lang="volume_sfx"></label>
+          <input type="range" id="sldSfx" min="0" max="100" value="80" data-setting="volumeSfx">
+          <span class="slider-value" id="valSfx">80%</span>
+        </div>
+      </div>
+
+      <!-- LOBBY MUSIC + LANGUAGE -->
+      <div class="settings-section">
+        <div class="section-title" data-lang="lobby_music"></div>
+        <div class="select-row">
+          <label data-lang="lobby_music"></label>
+          <select id="selLobbyMusic" data-setting="lobbyMusic">
+            <option value="standard" data-lang-option="music_standard"></option>
+            <option value="horizon" data-lang-option="music_horizon"></option>
+          </select>
+        </div>
+
+        <div class="section-title" style="margin-top:20px;" data-lang="language"></div>
+        <div class="select-row">
+          <label data-lang="language"></label>
+          <select id="selLanguage" data-setting="language">
+            <option value="eng">English</option>
+            <option value="rus">Русский</option>
+            <option value="uzb">O'zbekcha</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- VIDEO -->
+      <div class="settings-section">
+        <div class="section-title" data-lang="video_section"></div>
+
+        <div class="slider-row">
+          <label data-lang="brightness"></label>
+          <input type="range" id="sldBrightness" min="50" max="150" value="100" data-setting="brightness">
+          <span class="slider-value" id="valBrightness">100%</span>
+        </div>
+
+        <div class="slider-row">
+          <label data-lang="gamma"></label>
+          <input type="range" id="sldGamma" min="50" max="150" value="100" data-setting="gamma">
+          <span class="slider-value" id="valGamma">100%</span>
+        </div>
+
+        <div class="checkbox-row">
+          <label>
+            <input type="checkbox" id="chkScanlines" data-setting="scanlines" checked>
+            <span data-lang="scanlines"></span>
+          </label>
+        </div>
+
+        <div class="checkbox-row">
+          <label>
+            <input type="checkbox" id="chkVignette" data-setting="vignette" checked>
+            <span data-lang="vignette"></span>
+          </label>
+        </div>
+
+        <div class="checkbox-row">
+          <label>
+            <input type="checkbox" id="chkBloodOverlay" data-setting="bloodOverlay" checked>
+            <span data-lang="blood_overlay"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- HUD -->
+      <div class="settings-section">
+        <div class="section-title" data-lang="hud_section"></div>
+
+        <div class="checkbox-row">
+          <label>
+            <input type="checkbox" id="chkHudHealth" data-setting="hudHealth" checked>
+            <span data-lang="hud_health"></span>
+          </label>
+        </div>
+
+        <div class="checkbox-row">
+          <label>
+            <input type="checkbox" id="chkHudAmmo" data-setting="hudAmmo" checked>
+            <span data-lang="hud_ammo"></span>
+          </label>
+        </div>
+
+        <div class="checkbox-row">
+          <label>
+            <input type="checkbox" id="chkHudSlots" data-setting="hudSlots" checked>
+            <span data-lang="hud_slots"></span>
+          </label>
+        </div>
+
+        <div class="checkbox-row">
+          <label>
+            <input type="checkbox" id="chkHudKills" data-setting="hudKills" checked>
+            <span data-lang="hud_kills"></span>
+          </label>
+        </div>
+
+        <div class="checkbox-row">
+          <label>
+            <input type="checkbox" id="chkHudTimer" data-setting="hudTimer" checked>
+            <span data-lang="hud_timer"></span>
+          </label>
+        </div>
+
+        <div class="checkbox-row">
+          <label>
+            <input type="checkbox" id="chkHudNames" data-setting="hudNames" checked>
+            <span data-lang="hud_names"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- GAMEPLAY -->
+      <div class="settings-section">
+        <div class="section-title" data-lang="gameplay_section"></div>
+
+        <div class="checkbox-row">
+          <label>
+            <input type="checkbox" id="chkAutoAim" data-setting="autoAim">
+            <span data-lang="auto_aim"></span>
+          </label>
+        </div>
+
+        <div class="checkbox-row">
+          <label>
+            <input type="checkbox" id="chkShowFps" data-setting="showFps">
+            <span data-lang="show_fps"></span>
+          </label>
+        </div>
+
+        <div class="slider-row">
+          <label data-lang="difficulty"></label>
+          <input type="range" id="sldDifficulty" min="0" max="2" value="1" step="1" data-setting="difficulty">
+          <span class="slider-value" id="valDifficulty">Medium</span>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <button class="reset-btn" id="btnResetSettings" data-lang="reset_settings"></button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     ADDONS PAGE
+     ============================================================ -->
+<div class="page-container" id="addonsPage">
+  <div class="page-panel">
+    <div class="page-header">
+      <button class="back-btn" data-back data-lang="back"></button>
+      <h1 class="page-title" data-lang="addons_title"></h1>
     </div>
 
-    <!-- ============================================================
-         ADDONS PAGE
-         ============================================================ -->
-    <div class="page-container" id="addonsPage">
-        <div class="page-panel">
-            <div class="page-header">
-                <button class="back-btn" data-back data-lang="back"></button>
-                <h1 class="page-title" data-lang="addons_title"></h1>
-            </div>
+    <div class="page-content">
+      <div class="addons-actions">
+        <button class="action-btn" id="btnAddonFile" data-lang="addon_load_file"></button>
+        <button class="action-btn" id="btnAddonText" data-lang="addon_paste_json"></button>
+        <button class="action-btn danger" id="btnAddonClearAll" data-lang="addon_clear_all"></button>
+        <input type="file" id="addonFileInput" accept=".json" style="display:none">
+      </div>
 
-            <div class="page-content">
-                <div class="addons-actions">
-                    <button class="action-btn" id="btnAddonFile" data-lang="addon_load_file"></button>
-                    <button class="action-btn" id="btnAddonText" data-lang="addon_paste_json"></button>
-                    <button class="action-btn danger" id="btnAddonClearAll" data-lang="addon_clear_all"></button>
-                    <input type="file" id="addonFileInput" accept=".json" style="display:none">
-                </div>
+      <div class="section-title" style="margin-top:20px;">
+        <span data-lang="addon_installed"></span>
+        <span id="addonCount" class="count-badge">0</span>
+      </div>
 
-                <div class="section-title" style="margin-top:20px;">
-                    <span data-lang="addon_installed"></span>
-                    <span id="addonCount" class="count-badge">0</span>
-                </div>
-
-                <div id="addonsList" class="addons-list">
-                    <div class="empty-state" id="addonsEmpty">
-                        <div class="empty-icon">📦</div>
-                        <div data-lang="addon_empty"></div>
-                        <div class="empty-hint" data-lang="addon_hint"></div>
-                    </div>
-                </div>
-            </div>
+      <div id="addonsList" class="addons-list">
+        <div class="empty-state" id="addonsEmpty">
+          <div class="empty-icon">📦</div>
+          <div data-lang="addon_empty"></div>
+          <div class="empty-hint" data-lang="addon_hint"></div>
         </div>
+      </div>
     </div>
+  </div>
+</div>
 
-    <!-- JSON MODAL -->
-    <div class="modal-bg" id="jsonModal">
-        <div class="modal">
-            <div class="modal-title" data-lang="addon_insert"></div>
-            <textarea id="jsonTextarea" placeholder='{"version":1,"width":40,"height":30,"tiles":[[...]]}'></textarea>
-            <div class="modal-actions">
-                <button class="modal-btn secondary" data-modal-close data-lang="cancel"></button>
-                <button class="modal-btn primary" id="btnJsonConfirm" data-lang="add"></button>
-            </div>
-        </div>
+<!-- ============================================================
+     ACHIEVEMENTS PAGE
+     ============================================================ -->
+<div class="page-container" id="achievementsPage">
+  <div class="page-panel">
+    <div class="page-header">
+      <button class="back-btn" data-back data-lang="back"></button>
+      <h1 class="page-title" data-lang="ach_title"></h1>
     </div>
-
-    <!-- CONFIRM MODAL -->
-    <div class="modal-bg" id="confirmModal">
-        <div class="modal">
-            <div class="modal-title" id="confirmTitle"></div>
-            <div class="modal-text" id="confirmText"></div>
-            <div class="modal-actions">
-                <button class="modal-btn secondary" data-confirm-no data-lang="confirm_no"></button>
-                <button class="modal-btn primary" data-confirm-yes data-lang="confirm_yes"></button>
-            </div>
-        </div>
+    <div class="page-content">
+      <div class="achievements-grid" id="achievementsGrid"></div>
     </div>
+  </div>
+</div>
 
-    <!-- ACHIEVEMENTS PAGE -->
-    <div class="page-container" id="achievementsPage">
-        <div class="page-panel">
-            <div class="page-header">
-                <button class="back-btn" data-back data-lang="back"></button>
-                <h1 class="page-title" data-lang="ach_title"></h1>
-            </div>
-            <div class="page-content">
-                <div class="achievements-grid" id="achievementsGrid"></div>
-            </div>
-        </div>
+<!-- ============================================================
+     CAMPAIGN PAGE
+     ============================================================ -->
+<div class="page-container" id="campaignPage">
+  <div class="page-panel">
+    <div class="page-header">
+      <button class="back-btn" data-back data-lang="back"></button>
+      <h1 class="page-title" data-lang="cmp_title"></h1>
     </div>
-
-    <!-- CAMPAIGN PAGE -->
-    <div class="page-container" id="campaignPage">
-        <div class="page-panel">
-            <div class="page-header">
-                <button class="back-btn" data-back data-lang="back"></button>
-                <h1 class="page-title" data-lang="cmp_title"></h1>
-            </div>
-            <div class="page-content">
-                <div class="campaign-list" id="campaignList"></div>
-            </div>
-        </div>
+    <div class="page-content">
+      <div class="campaign-list" id="campaignList"></div>
     </div>
+  </div>
+</div>
 
-    <div id="toast"></div>
+<!-- ============================================================
+     JSON MODAL
+     ============================================================ -->
+<div class="modal-bg" id="jsonModal">
+  <div class="modal">
+    <div class="modal-title" data-lang="addon_insert"></div>
+    <textarea id="jsonTextarea" placeholder='{"version":1,"width":80,"height":70,"tiles":[[...]]}'></textarea>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" data-modal-close data-lang="cancel"></button>
+      <button class="modal-btn primary" id="btnJsonConfirm" data-lang="add"></button>
+    </div>
+  </div>
+</div>
 
-    <script src="../lang.js"></script>
-    <script src="menu.js"></script>
+<!-- ============================================================
+     CONFIRM MODAL
+     ============================================================ -->
+<div class="modal-bg" id="confirmModal">
+  <div class="modal">
+    <div class="modal-title" id="confirmTitle"></div>
+    <div class="modal-text" id="confirmText"></div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" data-confirm-no data-lang="confirm_no"></button>
+      <button class="modal-btn primary" data-confirm-yes data-lang="confirm_yes"></button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- ═══════════════ PWA ═══════════════ -->
+<script src="../pwa.js"></script>
+
+<!-- Menu -->
+<script src="../lang.js"></script>
+<script src="menu.js"></script>
+
 </body>
 </html>

@@ -1,13 +1,38 @@
 // ============================================================
-// player.js — Player harakati, qurollar, Special Infected holatlari
+// player.js — Player harakati, qurollar, Special Infected
 // Let For Dead
 // ============================================================
 window.Player = (function(){
   'use strict';
 
-  var AID_HOLD_TIME = 5 * 60;      // 5 sekund AID uchun
-  var REVIVE_TIME = 180;            // 3 sekund reviver uchun
-  var REVIVE_RANGE = 60;            // reviver masofasi
+  var AID_HOLD_TIME = 5 * 60;
+  var REVIVE_TIME = 180;
+  var REVIVE_RANGE = 60;
+  var KEYED_COOLDOWN = 30;
+
+  var keyedCooldown = 0;
+
+  // ============================================================
+  // BLOCKED — map chegarasi
+  // ============================================================
+  function isBlocked(x, y, r){
+    if(!window.World || !window.World.isSolidAt) return false;
+    var points = [
+      { x: x,         y: y         },
+      { x: x - r,     y: y         },
+      { x: x + r,     y: y         },
+      { x: x,         y: y - r     },
+      { x: x,         y: y + r     },
+      { x: x - r*0.7, y: y - r*0.7 },
+      { x: x + r*0.7, y: y - r*0.7 },
+      { x: x - r*0.7, y: y + r*0.7 },
+      { x: x + r*0.7, y: y + r*0.7 }
+    ];
+    for(var i = 0; i < points.length; i++){
+      if(window.World.isSolidAt(points[i].x, points[i].y)) return true;
+    }
+    return false;
+  }
 
   // ============================================================
   // WEAPON HELPERS
@@ -23,6 +48,9 @@ window.Player = (function(){
     return 'pistol';
   }
 
+  // ============================================================
+  // SLOT
+  // ============================================================
   function selectSlot(game, n){
     if(!game || !game.running) return;
     if(n < 1 || n > 5) return;
@@ -108,7 +136,7 @@ window.Player = (function(){
   }
 
   // ============================================================
-  // SHOOTING
+  // SHOOT
   // ============================================================
   function performShoot(game){
     var p = game.player;
@@ -150,6 +178,24 @@ window.Player = (function(){
     if(window.Weapons.isGun(wk) || window.Weapons.isLauncher(wk)){
       if(p.reloading) return false;
 
+      if(p.hasInfiniteAmmo && p.patronExplodeRisk){
+        if(Math.random() < p.patronExplodeRisk){
+          if(window.Zombies){
+            window.Zombies.spawnParticles(game, p.x, p.y, 40, '#ff6a3a', 8);
+          }
+          game.explosions.push({
+            x: p.x, y: p.y, r: 0, maxR: 120, life: 25, maxLife: 25
+          });
+          window.Zombies.damagePlayer(game, 30);
+          game.shake = 15;
+          window.SFX.sfx.explosion();
+          p.hasInfiniteAmmo = false;
+          p.patronExplodeRisk = 0;
+          if(window.HUD) window.HUD.showBanner('PATRON EXPLODED!', '#e0523c');
+          return false;
+        }
+      }
+
       if(!p.hasInfiniteAmmo && !w.infinite){
         if(!window.Weapons.consumeAmmo(p, wk)){
           if(p.reserve[wk] > 0) reloadCurrent(game);
@@ -179,7 +225,6 @@ window.Player = (function(){
         if(wk === 'shotgun') window.SFX.sfx.shotgun();
         else if(wk === 'rifle') window.SFX.sfx.rifle();
         else if(wk === 'sniper') window.SFX.sfx.rifle();
-        else if(wk === 'uzi') window.SFX.sfx.shoot();
         else window.SFX.sfx.shoot();
       }
 
@@ -212,19 +257,114 @@ window.Player = (function(){
   }
 
   // ============================================================
-  // AID + REVIVER — HOLD
+  // KEYED OBJECT — E bilan
+  // ============================================================
+  function updateKeyedInteraction(game, dt, input){
+    if(keyedCooldown > 0) keyedCooldown -= dt;
+    if(!input || !input.interact) return;
+    if(keyedCooldown > 0) return;
+
+    var p = game.player;
+    var RANGE = 60;
+
+    if(!window.World || !window.World.getMap) return;
+    var map = window.World.getMap();
+    if(!map) return;
+
+    var cx = Math.floor(p.x / 32);
+    var cy = Math.floor(p.y / 32);
+
+    for(var dy = -1; dy <= 1; dy++){
+      for(var dx = -1; dx <= 1; dx++){
+        var tx = cx + dx;
+        var ty = cy + dy;
+        if(tx < 0 || tx >= map.width || ty < 0 || ty >= map.height) continue;
+
+        var tileId = map.tiles[ty][tx];
+        var flags = window.World.getTileFlags(tileId);
+
+        if(flags.keyed && flags.keyedType){
+          var wx = tx * 32 + 16;
+          var wy = ty * 32 + 16;
+          var d = Math.hypot(p.x - wx, p.y - wy);
+          if(d < RANGE){
+            triggerKeyedObject(game, flags.keyedType, tx, ty, wx, wy);
+            keyedCooldown = KEYED_COOLDOWN;
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  function triggerKeyedObject(game, type, tx, ty, wx, wy){
+    console.log('[Keyed]', type, 'at', tx, ty);
+
+    switch(type){
+      case 'radio':
+        if(!game.hasRadio){
+          game.hasRadio = true;
+          game.radioPickup = null;
+          if(window.SFX) window.SFX.sfx.radioPickup();
+          if(window.HUD) window.HUD.showBanner('Radio acquired — press E to call', '#c98a2e');
+          var cb = document.getElementById('callBtn');
+          if(cb) cb.classList.add('show');
+        } else {
+          if(window.Help && window.Help.callHelicopter){
+            window.Help.callHelicopter(game);
+          }
+        }
+        break;
+
+      case 'door':
+      case 'gate':
+        if(window.World && window.World.setCellAt){
+          var newTile = (tx >= 0) ? 1 : 1;
+          window.World.setCellAt(wx, wy, 1);
+          if(window.HUD) window.HUD.showBanner('Opened', '#7ad44a');
+          // Vaqtincha
+          setTimeout(function(){
+            if(window.World && window.World.setCellAt){
+              window.World.setCellAt(wx, wy, (type === 'door') ? 24 : 28);
+            }
+          }, 3000);
+        }
+        break;
+
+      case 'turret':
+        if(window.HUD) window.HUD.showBanner('Turret mounted', '#4a8ed4');
+        break;
+
+      case 'lever':
+        if(window.HUD) window.HUD.showBanner('Lever pulled', '#c98a2e');
+        break;
+
+      case 'button':
+        if(window.HUD) window.HUD.showBanner('Button pressed', '#7ad44a');
+        break;
+
+      case 'generator':
+        if(window.HUD) window.HUD.showBanner('Generator started', '#e0523c');
+        break;
+
+      case 'elevator':
+        if(window.HUD) window.HUD.showBanner('Elevator called', '#4a8ed4');
+        break;
+    }
+  }
+
+  // ============================================================
+  // AID + REVIVER
   // ============================================================
   function startHold(game){
     var p = game.player;
 
-    // 1. AID bosib turish (3-slot)
     if(p.currentSlot === 3 && p.ammo.aid > 0){
       p.aidHoldTimer = 0;
       p.aidHolding = true;
       return;
     }
 
-    // 2. Reviver — yaqin atrofdagi yiqilgan sherikni tiklash
     for(var i = 0; i < game.companions.length; i++){
       var c = game.companions[i];
       if(!c.isDown) continue;
@@ -245,15 +385,12 @@ window.Player = (function(){
     p.aidHolding = false;
     p.aidHoldTimer = 0;
     p.reviving = null;
-    if(window.HUD && window.HUD.showAidProgress){
-      window.HUD.showAidProgress(0);
-    }
+    if(window.HUD && window.HUD.showAidProgress) window.HUD.showAidProgress(0);
   }
 
   function updateAidHold(game, dt){
     var p = game.player;
 
-    // === AID HOLD ===
     if(p.aidHolding){
       if(p.currentSlot !== 3){ p.aidHolding = false; }
       else if(p.ammo.aid <= 0){ p.aidHolding = false; }
@@ -268,7 +405,7 @@ window.Player = (function(){
           window.SFX.sfx.heal();
           if(window.Zombies) window.Zombies.spawnParticles(game, p.x, p.y, 25, '#7fbf52', 5);
           if(window.HUD) window.HUD.showBanner('+80 HP', '#7ad44a');
-          if(window.HUD) window.HUD.showAidProgress(0);
+          if(window.HUD && window.HUD.showAidProgress) window.HUD.showAidProgress(0);
           if(window.HUD) window.HUD.update(game);
         } else {
           if(window.HUD && window.HUD.showAidProgress){
@@ -278,7 +415,6 @@ window.Player = (function(){
       }
     }
 
-    // === REVIVER ===
     if(p.reviving){
       var target = p.reviving.target;
       if(!target || !target.isDown){
@@ -286,17 +422,14 @@ window.Player = (function(){
         if(window.HUD && window.HUD.showAidProgress) window.HUD.showAidProgress(0);
         return;
       }
-
       var d = Math.hypot(target.x - p.x, target.y - p.y);
       if(d > REVIVE_RANGE + 20){
         p.reviving = null;
         if(window.HUD && window.HUD.showAidProgress) window.HUD.showAidProgress(0);
         return;
       }
-
       p.reviving.timer += dt;
       var pct = p.reviving.timer / p.reviving.duration;
-
       if(pct >= 1){
         target.isDown = false;
         target.hp = target.maxHp * 0.5;
@@ -315,12 +448,11 @@ window.Player = (function(){
   }
 
   // ============================================================
-  // SPECIAL INFECTED STATES
+  // SPECIAL INFECTED
   // ============================================================
   function updateSpecialStates(game, dt, keys){
     var p = game.player;
 
-    // HUNTER — 5 sekund pin (L4D2)
     if(p.pinned){
       p.pinned.timer -= dt;
       p.pinned.damageTimer -= dt;
@@ -342,7 +474,6 @@ window.Player = (function(){
       }
     }
 
-    // JOCKEY — 4 sekund ride (L4D2)
     if(p.ridden){
       p.ridden.timer -= dt;
       p.ridden.damageTimer -= dt;
@@ -371,7 +502,6 @@ window.Player = (function(){
       }
     }
 
-    // SMOKER — 4 sekund choke
     if(p.smoked){
       p.smoked.timer -= dt;
       p.smoked.damageTimer -= dt;
@@ -392,7 +522,6 @@ window.Player = (function(){
       if(p.smoked.timer <= 0) p.smoked = null;
     }
 
-    // CHARGER
     if(p.charged){
       p.charged.timer -= dt;
       p.charged.slamTimer -= dt;
@@ -415,7 +544,6 @@ window.Player = (function(){
       if(p.charged.timer <= 0) p.charged = null;
     }
 
-    // BOOMER VOMIT
     if(p.vomitTimer > 0){
       p.vomitTimer -= dt;
       var vomitEl = document.getElementById('vomit-overlay');
@@ -425,13 +553,11 @@ window.Player = (function(){
       }
     }
 
-    // WITCH CRIPPLE
     if(p.crippled){
       p.crippled.timer -= dt;
       if(p.crippled.timer <= 0) p.crippled = null;
     }
 
-    // TANK KNOCKBACK
     if(Math.abs(p.knockbackVX) > 0.1 || Math.abs(p.knockbackVY) > 0.1){
       p.x += p.knockbackVX * dt;
       p.y += p.knockbackVY * dt;
@@ -451,7 +577,6 @@ window.Player = (function(){
     if(p.meleeCooldown > 0) p.meleeCooldown -= dt;
     if(p.pushCooldown > 0) p.pushCooldown -= dt;
 
-    // Reload
     if(p.reloading){
       p.reloadTimer -= dt;
       if(p.reloadTimer <= 0){
@@ -473,24 +598,23 @@ window.Player = (function(){
       }
     }
 
-    // Special states
     if(input && input.keys){
       updateSpecialStates(game, dt, input.keys);
     }
 
-    // AID / REVIVER
     updateAidHold(game, dt);
+
+    // Keyed object interaction
+    updateKeyedInteraction(game, dt, input);
 
     if(input && input.autoMode) return;
 
-    // ============================================================
-    // HARAKAT — AID paytida blok, reviver paytida blok
-    // ============================================================
+    // HARAKAT
     var mx = input ? (input.moveX || 0) : 0;
     var my = input ? (input.moveY || 0) : 0;
 
-    var blockedByAid = p.aidHolding;         // AID bosib turganda harakat blok
-    var blockedByRevive = !!p.reviving;      // Reviver paytida harakat blok
+    var blockedByAid = p.aidHolding;
+    var blockedByRevive = !!p.reviving;
     var canMove = !p.pinned && !p.ridden && !p.smoked && !p.charged
                   && !blockedByAid && !blockedByRevive;
 
@@ -502,16 +626,36 @@ window.Player = (function(){
       if(len > 1){ mx /= len; my /= len; }
       var baseSpeed = window.AI ? window.AI.getEntitySpeed(p) : p.maxSpeed;
       var pSpd = baseSpeed * speedMult;
-      p.x += mx * pSpd * dt;
-      p.y += my * pSpd * dt;
+
+      // X
+      var newX = p.x + mx * pSpd * dt;
+      if(!isBlocked(newX, p.y, p.r)){
+        p.x = newX;
+      } else {
+        for(var sx = 1; sx <= 6; sx++){
+          var tryX = p.x + (newX - p.x) * (1 - sx / 7);
+          if(!isBlocked(tryX, p.y, p.r)){ p.x = tryX; break; }
+        }
+      }
+
+      // Y
+      var newY = p.y + my * pSpd * dt;
+      if(!isBlocked(p.x, newY, p.r)){
+        p.y = newY;
+      } else {
+        for(var sy = 1; sy <= 6; sy++){
+          var tryY = p.y + (newY - p.y) * (1 - sy / 7);
+          if(!isBlocked(p.x, tryY, p.r)){ p.y = tryY; break; }
+        }
+      }
     }
 
-    // Aim — harakat bloklangan bo'lsa ham aim saqlanadi
+    // Aim
     if(input && input.hasAim && !p.pinned && !p.ridden && !p.smoked && !p.charged){
       p.angle = Math.atan2(input.aimY, input.aimX);
     }
 
-    // Shoot — AID/reviver paytida blok
+    // Shoot
     if(p.cooldown > 0) p.cooldown -= dt;
     if(input && input.firing && p.cooldown <= 0 && canMove){
       var wk = getCurrentWeaponKey(game);
@@ -540,6 +684,7 @@ window.Player = (function(){
     update: update,
     startHold: startHold,
     stopHold: stopHold,
+    isBlocked: isBlocked,
     AID_HOLD_TIME: AID_HOLD_TIME,
     REVIVE_TIME: REVIVE_TIME
   };

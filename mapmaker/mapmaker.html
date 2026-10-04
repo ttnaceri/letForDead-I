@@ -2,72 +2,97 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Let For Dead — Map Maker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+
+<!-- ═══════════════ PWA ═══════════════ -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Let For Dead I — Map Maker" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="application-name" content="Let For Dead I — Map Maker" />
+<meta name="theme-color" content="#0d0b0a" />
+
+<link rel="manifest" href="../manifest.json" />
+<link rel="apple-touch-icon" href="../image/letfordead.png" />
+<link rel="icon" type="image/png" href="../image/letfordead.png" />
+
+<title>Let For Dead I — Map Maker</title>
 <link rel="stylesheet" href="mapmaker.css">
 </head>
 <body>
+
 <div id="app">
 
-  <!-- ============================================================
-       SIDEBAR — Palitra
-       ============================================================ -->
+  <!-- ═══════════════ SIDEBAR ═══════════════ -->
   <aside id="sidebar">
     <div class="sidebar-header">
       <div class="sidebar-title">MAP MAKER</div>
-      <div class="sidebar-sub">Let For Dead</div>
+      <div class="sidebar-sub">Let For Dead I</div>
     </div>
 
     <div id="palette"></div>
   </aside>
 
-  <!-- ============================================================
-       MAIN — Toolbar + Canvas
-       ============================================================ -->
+  <!-- ═══════════════ MAIN ═══════════════ -->
   <div id="main">
-
     <div id="toolbar">
-      <button class="tool-btn" id="toolBrush" data-tool="brush">
-        <span class="icon">✏️</span> Brush
+      <button class="tool-btn active" id="toolBrush" data-tool="brush">
+        <span class="icon">✏️</span> <span class="label">Brush</span>
       </button>
       <button class="tool-btn" id="toolErase" data-tool="erase">
-        <span class="icon">🧹</span> Erase
+        <span class="icon">🧹</span> <span class="label">Erase</span>
       </button>
       <button class="tool-btn" id="toolFill" data-tool="fill">
-        <span class="icon">🪣</span> Fill
+        <span class="icon">🪣</span> <span class="label">Fill</span>
       </button>
       <button class="tool-btn" id="toolPicker" data-tool="picker">
-        <span class="icon">💧</span> Picker
+        <span class="icon">💧</span> <span class="label">Picker</span>
+      </button>
+      <button class="tool-btn" id="toolLine" data-tool="line">
+        <span class="icon">➡️</span> <span class="label">Line</span>
+      </button>
+      <button class="tool-btn" id="toolRect" data-tool="rect">
+        <span class="icon">▭</span> <span class="label">Rect</span>
       </button>
 
       <div class="toolbar-sep"></div>
 
       <button class="tool-btn" id="btnUndo" title="Ctrl+Z">
-        <span class="icon">↶</span> Undo
+        <span class="icon">↶</span> <span class="label">Undo</span>
       </button>
       <button class="tool-btn" id="btnRedo" title="Ctrl+Shift+Z">
-        <span class="icon">↷</span> Redo
+        <span class="icon">↷</span> <span class="label">Redo</span>
       </button>
 
       <div class="toolbar-sep"></div>
 
       <button class="tool-btn" id="btnNew">
-        <span class="icon">📄</span> New
+        <span class="icon">📄</span> <span class="label">New</span>
       </button>
       <button class="tool-btn" id="btnSave">
-        <span class="icon">💾</span> Save
+        <span class="icon">💾</span> <span class="label">Save</span>
       </button>
       <button class="tool-btn" id="btnLoad">
-        <span class="icon">📂</span> Load
+        <span class="icon">📂</span> <span class="label">Load</span>
+      </button>
+      <button class="tool-btn" id="btnPlay">
+        <span class="icon">▶</span> <span class="label">Play</span>
       </button>
       <button class="tool-btn" id="btnExport">
-        <span class="icon">⬇</span> Export
+        <span class="icon">⬇</span> <span class="label">Export</span>
       </button>
 
       <div class="toolbar-sep"></div>
 
-      <button class="tool-btn" id="btnGrid">
-        <span class="icon">▦</span> Grid
+      <button class="tool-btn active" id="btnGrid">
+        <span class="icon">▦</span> <span class="label">Grid</span>
+      </button>
+      <button class="tool-btn active" id="btnShowInvisible">
+        <span class="icon">👁</span> <span class="label">Spawns</span>
+      </button>
+
+      <button class="tool-btn" id="btnToggleSettings">
+        <span class="icon">⚙️</span> <span class="label">Settings</span>
       </button>
 
       <div class="toolbar-spacer"></div>
@@ -82,52 +107,148 @@
 
     <div id="statusbar">
       <div class="item"><span class="key">LMB</span> Draw</div>
-      <div class="item"><span class="key">RMB</span> Erase</div>
-      <div class="item"><span class="key">MMB</span> Pan</div>
+      <div class="item"><span class="key">RMB</span> Pan</div>
       <div class="item"><span class="key">Wheel</span> Zoom</div>
       <div class="item"><span class="key">Ctrl+Z</span> Undo</div>
-      <div class="item"><span class="key">Ctrl+Shift+Z</span> Redo</div>
-      <div class="item"><span class="key">Del</span> Erase cell</div>
-      <div class="item"><span class="key">1-9</span> Quick pick</div>
+      <div class="item"><span class="key">Del</span> Erase</div>
       <div class="item" id="statusInfo" style="margin-left:auto; color:#c98a2e;"></div>
     </div>
-
   </div>
+
+  <!-- ═══════════════ SETTINGS PANEL ═══════════════ -->
+  <aside id="settingsPanel">
+    <div class="settings-header">
+      <div class="settings-title">⚙️ GAME SETTINGS</div>
+      <button class="settings-close" id="btnCloseSettings">✕</button>
+    </div>
+    <div class="settings-body">
+
+      <div class="setting-group">
+        <div class="setting-label">📝 Map Name</div>
+        <input type="text" id="txtMapName" class="setting-input" value="Untitled Map">
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">👤 Author</div>
+        <input type="text" id="txtMapAuthor" class="setting-input" value="Anonymous">
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">🚁 Help Transport</div>
+        <select id="selTransport" class="setting-select">
+          <option value="helicopter">🚁 Helicopter</option>
+          <option value="boat">🚤 Boat</option>
+          <option value="train">🚂 Train</option>
+          <option value="car">🚗 Escape Car</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">⏱️ Help Arrival (sec)</div>
+        <div class="setting-row">
+          <input type="range" id="sldHeliTime" min="10" max="300" value="60" step="5">
+          <input type="number" id="numHeliTime" min="10" max="300" value="60" step="5">
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">🧟 Zombie Spawn Rate</div>
+        <div class="setting-row">
+          <input type="range" id="sldZombieRate" min="5" max="100" value="40" step="1">
+          <input type="number" id="numZombieRate" min="5" max="100" value="40" step="1">
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">💪 Tank HP</div>
+        <div class="setting-row">
+          <input type="range" id="sldTankHp" min="500" max="20000" value="5236" step="100">
+          <input type="number" id="numTankHp" min="500" max="20000" value="5236" step="100">
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">💥 Horde Count</div>
+        <div class="setting-row">
+          <input type="range" id="sldHordeCount" min="5" max="100" value="12" step="1">
+          <input type="number" id="numHordeCount" min="5" max="100" value="12" step="1">
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">🚁 Helicopter Speed</div>
+        <div class="setting-row">
+          <input type="range" id="sldHeliSpeed" min="1" max="20" value="8" step="1">
+          <input type="number" id="numHeliSpeed" min="1" max="20" value="8" step="1">
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">🔫 Start Weapon</div>
+        <select id="selStartWeapon" class="setting-select">
+          <option value="uzi">UZI</option>
+          <option value="pistol">Pistol</option>
+          <option value="shotgun">Shotgun</option>
+          <option value="rifle">M16 Rifle</option>
+          <option value="ak47">AK-47</option>
+          <option value="smg">SMG</option>
+          <option value="sniper">Hunting Rifle</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">🩸 Difficulty</div>
+        <select id="selDifficulty" class="setting-select">
+          <option value="0">Easy</option>
+          <option value="1" selected>Medium</option>
+          <option value="2">Hard</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <button class="action-btn" id="btnCallPlane">
+          ✈️ Test: Call Attack Plane
+        </button>
+      </div>
+
+    </div>
+  </aside>
 </div>
 
-<!-- ============================================================
-     MODAL — New Map
-     ============================================================ -->
+<!-- ═══════════════ NEW MAP MODAL ═══════════════ -->
 <div class="modal-bg" id="newMapModal">
   <div class="modal">
-    <h2>New Map</h2>
+    <div class="modal-title">New Map</div>
     <label>Width (cells)</label>
-    <input type="number" id="newMapW" value="40" min="5" max="500">
+    <input type="number" id="newMapW" value="80" min="5" max="500">
     <label>Height (cells)</label>
-    <input type="number" id="newMapH" value="30" min="5" max="500">
+    <input type="number" id="newMapH" value="70" min="5" max="500">
     <div class="modal-actions">
-      <button class="btn-secondary" id="newMapCancel">Cancel</button>
-      <button class="btn-primary" id="newMapCreate">Create</button>
+      <button class="modal-btn secondary" id="newMapCancel">Cancel</button>
+      <button class="modal-btn primary" id="newMapCreate">Create</button>
     </div>
   </div>
 </div>
 
-<!-- ============================================================
-     MODAL — Load Map
-     ============================================================ -->
+<!-- ═══════════════ LOAD MODAL ═══════════════ -->
 <div class="modal-bg" id="loadMapModal">
   <div class="modal">
-    <h2>Load Map</h2>
+    <div class="modal-title">Load Map</div>
     <label>Paste map JSON</label>
-    <textarea id="loadMapText" style="width:100%;height:200px;padding:8px;background:#0d0b0a;border:1px solid #2a2418;color:#d8d1c2;font-family:inherit;font-size:11px;border-radius:3px;resize:none;"></textarea>
+    <textarea id="loadMapText"></textarea>
     <div class="modal-actions">
-      <button class="btn-secondary" id="loadMapCancel">Cancel</button>
-      <button class="btn-primary" id="loadMapConfirm">Load</button>
+      <button class="modal-btn secondary" id="loadMapCancel">Cancel</button>
+      <button class="modal-btn primary" id="loadMapConfirm">Load</button>
     </div>
   </div>
 </div>
 
 <div id="toast"></div>
+
+<!-- ═══════════════ SCRIPTS ═══════════════ -->
+<script src="../pwa.js"></script>
+<script src="mapmaker-map.js"></script>
 <script src="mapmaker.js"></script>
+
 </body>
 </html>

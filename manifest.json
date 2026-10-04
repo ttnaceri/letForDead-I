@@ -1,0 +1,66 @@
+{
+  "name": "Let For Dead I",
+  "short_name": "LetForDead",
+  "description": "A survival horror zombie shooter inspired by Left 4 Dead 2",
+  "start_url": "./menu/menu.html",
+  "scope": "./",
+  "id": "/let-for-dead-i",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#0d0b0a",
+  "theme_color": "#0d0b0a",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["games", "entertainment"],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "image/letfordead.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "image/letfordead.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "image/letfordead.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "image/letfordead.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Campaign",
+      "short_name": "Campaign",
+      "description": "Start the campaign",
+      "url": "./menu/menu.html",
+      "icons": [{ "src": "image/letfordead.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Map Maker",
+      "short_name": "Maps",
+      "description": "Create a new map",
+      "url": "./mapmaker/mapmaker.html",
+      "icons": [{ "src": "image/letfordead.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Mod Maker",
+      "short_name": "Mods",
+      "description": "Create new mods",
+      "url": "./modmaker/modmaker.html",
+      "icons": [{ "src": "image/letfordead.png", "sizes": "192x192" }]
+    }
+  ]
+}

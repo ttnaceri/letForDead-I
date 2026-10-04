@@ -1,17 +1,21 @@
 // ============================================================
 // menu.js — Let For Dead I
+// Menu asosiy logikasi
 // ============================================================
 (function(){
 'use strict';
 
+// ============================================================
+// DOM HELPERS
+// ============================================================
 function $(id){ return document.getElementById(id); }
 function $$(sel){ return document.querySelectorAll(sel); }
 
 // ============================================================
-// LANG helper
+// LANG
 // ============================================================
 function t(key){
-    return window.Lang ? window.Lang.t(key) : key;
+    return (window.Lang && window.Lang.t) ? window.Lang.t(key) : key;
 }
 
 // ============================================================
@@ -61,6 +65,8 @@ var MUSIC_FILES = {
     horizon:  '../music/lobby1.mp3'
 };
 
+var DIFFICULTY_KEYS = ['diff_easy', 'diff_medium', 'diff_hard'];
+
 function loadSettings(){
     var s = null;
     try {
@@ -70,8 +76,7 @@ function loadSettings(){
     if(!s) s = {};
     var merged = {};
     for(var k in DEFAULT_SETTINGS){
-        if(s[k] !== undefined) merged[k] = s[k];
-        else merged[k] = DEFAULT_SETTINGS[k];
+        merged[k] = (s[k] !== undefined) ? s[k] : DEFAULT_SETTINGS[k];
     }
     return merged;
 }
@@ -101,7 +106,6 @@ function playLobbyMusic(){
         });
     }
 
-    // Agar src bir xil bo'lsa va chalinayotgan bo'lsa — hech narsa qilmaymiz
     if(lobbyAudio.src && lobbyAudio.src.indexOf(src) !== -1 && !lobbyAudio.paused){
         return;
     }
@@ -114,7 +118,6 @@ function playLobbyMusic(){
     var pr = lobbyAudio.play();
     if(pr && pr.catch){
         pr.catch(function(){
-            // Autoplay bloklangan — birinchi klikda qayta urinamiz
             var once = function(){
                 if(lobbyAudio){
                     var p2 = lobbyAudio.play();
@@ -136,28 +139,26 @@ function updateLobbyVolume(){
 }
 
 // ============================================================
-// LANGUAGE — barcha matnlarni yangilash
+// LANGUAGE
 // ============================================================
 function updateLanguage(){
-    // data-lang atributli barcha elementlar
     var els = $$('[data-lang]');
     for(var i = 0; i < els.length; i++){
         var key = els[i].getAttribute('data-lang');
         els[i].textContent = t(key);
     }
 
-    // Select option matnlar
     var optEls = $$('[data-lang-option]');
     for(var j = 0; j < optEls.length; j++){
         var k = optEls[j].getAttribute('data-lang-option');
         optEls[j].textContent = t(k);
     }
 
-    // Difficulty label
     updateDifficultyLabel();
 
-    // Document language
-    document.documentElement.lang = window.Lang ? window.Lang.getLanguage() : 'eng';
+    if(window.Lang && window.Lang.getLanguage){
+        document.documentElement.lang = window.Lang.getLanguage();
+    }
 }
 
 // ============================================================
@@ -167,8 +168,7 @@ function applySettingsToUI(){
     var sliders = $$('input[type="range"][data-setting]');
     for(var i = 0; i < sliders.length; i++){
         var key = sliders[i].getAttribute('data-setting');
-        var v = settings[key];
-        if(v !== undefined) sliders[i].value = v;
+        if(settings[key] !== undefined) sliders[i].value = settings[key];
     }
     var checks = $$('input[type="checkbox"][data-setting]');
     for(var j = 0; j < checks.length; j++){
@@ -200,8 +200,17 @@ function updateSliderLabels(){
 function updateDifficultyLabel(){
     var el = $('valDifficulty');
     if(!el) return;
-    var keys = ['diff_easy', 'diff_medium', 'diff_hard'];
-    el.textContent = t(keys[settings.difficulty] || 'diff_medium');
+    el.textContent = t(DIFFICULTY_KEYS[settings.difficulty] || 'diff_medium');
+}
+
+function applyVisualEffects(){
+    var video = $('bg-video');
+    if(video){
+        var b = settings.brightness / 100;
+        var g = settings.gamma / 100;
+        var brightness = (b * g).toFixed(2);
+        video.style.filter = 'brightness(' + brightness + ')';
+    }
 }
 
 // ============================================================
@@ -213,8 +222,7 @@ function setupSettingsEvents(){
         (function(sl){
             sl.addEventListener('input', function(){
                 var key = sl.getAttribute('data-setting');
-                var v = parseInt(sl.value, 10);
-                settings[key] = v;
+                settings[key] = parseInt(sl.value, 10);
                 saveSettings(settings);
                 updateSliderLabels();
                 updateDifficultyLabel();
@@ -241,12 +249,11 @@ function setupSettingsEvents(){
         (function(sel){
             sel.addEventListener('change', function(){
                 var key = sel.getAttribute('data-setting');
-                var v = sel.value;
-                settings[key] = v;
+                settings[key] = sel.value;
                 saveSettings(settings);
 
                 if(key === 'language'){
-                    if(window.Lang) window.Lang.setLanguage(v);
+                    if(window.Lang) window.Lang.setLanguage(settings.language);
                     updateLanguage();
                 }
                 if(key === 'lobbyMusic'){
@@ -269,16 +276,6 @@ function setupSettingsEvents(){
             updateLobbyVolume();
             showToast(t('settings_reset'), 'success');
         });
-    }
-}
-
-function applyVisualEffects(){
-    var video = $('bg-video');
-    if(video){
-        var b = settings.brightness / 100;
-        var g = settings.gamma / 100;
-        var brightness = (b * g).toFixed(2);
-        video.style.filter = 'brightness(' + brightness + ')';
     }
 }
 
@@ -316,8 +313,7 @@ function setupMenuButtons(){
     for(var i = 0; i < btns.length; i++){
         (function(btn){
             btn.addEventListener('click', function(){
-                var action = btn.getAttribute('data-action');
-                handleMenuAction(action);
+                handleMenuAction(btn.getAttribute('data-action'));
             });
         })(btns[i]);
     }
@@ -358,21 +354,26 @@ function handleMenuAction(action){
     }
 }
 
+// ============================================================
+// START GAME — LOADING orqali
+// ============================================================
 function startGame(mode){
     saveSettings(settings);
     if(lobbyAudio) lobbyAudio.pause();
-    window.location.href = '../game.html';
+
+    // Loading page orqali o'yinni boshlash
+    window.location.href = '../loading.html';
 }
 
 // ============================================================
 // CAMPAIGN
 // ============================================================
 var CAMPAIGNS = [
-    { id: 'dead_center',   nameKey: 'cmp_dead_center',   descKey: 'cmp_dead_center_d',   icon: '🏨' },
-    { id: 'dark_carnival', nameKey: 'cmp_dark_carn',     descKey: 'cmp_dark_carn_d',     icon: '🎢' },
-    { id: 'swamp_fever',   nameKey: 'cmp_swamp',         descKey: 'cmp_swamp_d',         icon: '🌿' },
-    { id: 'hard_rain',     nameKey: 'cmp_hard_rain',     descKey: 'cmp_hard_rain_d',     icon: '🌧️' },
-    { id: 'the_parish',    nameKey: 'cmp_parish',        descKey: 'cmp_parish_d',        icon: '⛪' }
+    { id: 'dead_center',   nameKey: 'cmp_dead_center', descKey: 'cmp_dead_center_d', icon: '🏨' },
+    { id: 'dark_carnival', nameKey: 'cmp_dark_carn',   descKey: 'cmp_dark_carn_d',   icon: '🎢' },
+    { id: 'swamp_fever',   nameKey: 'cmp_swamp',       descKey: 'cmp_swamp_d',       icon: '🌿' },
+    { id: 'hard_rain',     nameKey: 'cmp_hard_rain',   descKey: 'cmp_hard_rain_d',   icon: '🌧️' },
+    { id: 'the_parish',    nameKey: 'cmp_parish',      descKey: 'cmp_parish_d',      icon: '⛪' }
 ];
 
 function renderCampaignList(){
@@ -400,14 +401,14 @@ function renderCampaignList(){
 // ACHIEVEMENTS
 // ============================================================
 var ACHIEVEMENTS = [
-    { id: 'first_blood',  nameKey: 'ach_first_blood',  descKey: 'ach_first_blood_d',  icon: '🩸' },
-    { id: 'horde_survivor', nameKey: 'ach_horde',      descKey: 'ach_horde_d',        icon: '👥' },
-    { id: 'heli_call',    nameKey: 'ach_heli_call',    descKey: 'ach_heli_call_d',    icon: '📻' },
-    { id: 'tank_killer',  nameKey: 'ach_tank',         descKey: 'ach_tank_d',         icon: '💪' },
-    { id: 'rescued',      nameKey: 'ach_rescued',      descKey: 'ach_rescued_d',      icon: '🚁' },
-    { id: 'survivor_all', nameKey: 'ach_all_surv',     descKey: 'ach_all_surv_d',     icon: '👬' },
-    { id: 'laser_equipped', nameKey: 'ach_laser',      descKey: 'ach_laser_d',        icon: '🔴' },
-    { id: 'aid_master',   nameKey: 'ach_aid',          descKey: 'ach_aid_d',          icon: '💊' }
+    { id: 'first_blood',    nameKey: 'ach_first_blood', descKey: 'ach_first_blood_d', icon: '🩸' },
+    { id: 'horde_survivor', nameKey: 'ach_horde',       descKey: 'ach_horde_d',       icon: '👥' },
+    { id: 'heli_call',      nameKey: 'ach_heli_call',   descKey: 'ach_heli_call_d',   icon: '📻' },
+    { id: 'tank_killer',    nameKey: 'ach_tank',        descKey: 'ach_tank_d',        icon: '💪' },
+    { id: 'rescued',        nameKey: 'ach_rescued',     descKey: 'ach_rescued_d',     icon: '🚁' },
+    { id: 'survivor_all',   nameKey: 'ach_all_surv',    descKey: 'ach_all_surv_d',    icon: '👬' },
+    { id: 'laser_equipped', nameKey: 'ach_laser',       descKey: 'ach_laser_d',       icon: '🔴' },
+    { id: 'aid_master',     nameKey: 'ach_aid',         descKey: 'ach_aid_d',         icon: '💊' }
 ];
 
 function renderAchievements(){
@@ -433,6 +434,8 @@ function renderAchievements(){
 
 function loadAchievementsProgress(){
     try {
+        var save = JSON.parse(localStorage.getItem('letfordead_save_v1') || 'null');
+        if(save && save.achievements) return save.achievements;
         return JSON.parse(localStorage.getItem('letfordead_achievements') || '{}');
     } catch(e){ return {}; }
 }
@@ -491,8 +494,8 @@ function renderAddons(){
 
         var info = document.createElement('div');
         info.className = 'addon-info';
-        var w = addon.map && addon.map.width ? addon.map.width : '?';
-        var h = addon.map && addon.map.height ? addon.map.height : '?';
+        var w = (addon.map && addon.map.width) ? addon.map.width : '?';
+        var h = (addon.map && addon.map.height) ? addon.map.height : '?';
         info.innerHTML =
             '<div class="addon-name">' + escapeHtml(addon.name) + '</div>' +
             '<div class="addon-meta">' + w + ' × ' + h + ' · ' + (addon.date || '—') + '</div>';
@@ -553,12 +556,13 @@ function drawMiniMap(canvas, map){
         10:'#6a2a1a', 11:'#1a1a1a', 12:'#c9bfa8', 13:'#4a8ed4', 14:'#d4a44a',
         15:'#d44a7a', 16:'#7a9a3a', 17:'#c98a2e', 18:'#7fbf52', 19:'#e0a83f',
         20:'#7ad44a', 21:'#837b6d', 22:'#4a6a8a', 23:'#6a2a2a', 24:'#8a5a2a',
-        25:'#e0523c'
+        25:'#e0523c', 26:'#c98a2e', 27:'#e0523c', 28:'#8a5a2a', 29:'#3a3a4a',
+        30:'#7ad44a'
     };
 
     for(var y = 0; y < map.height; y++){
         for(var x = 0; x < map.width; x++){
-            var tv = map.tiles[y] ? map.tiles[y][x] : 0;
+            var tv = (map.tiles[y] && map.tiles[y][x]) ? map.tiles[y][x] : 0;
             c.fillStyle = TILE_COLORS[tv] || '#0d0b0a';
             c.fillRect(x * cellW, y * cellH, cellW, cellH);
         }
@@ -568,14 +572,20 @@ function drawMiniMap(canvas, map){
 function playAddon(addon){
     try {
         localStorage.setItem('letfordead_active_map', JSON.stringify(addon.map));
+        localStorage.setItem('letfordead_map', JSON.stringify(addon.map));
     } catch(e){
         showToast(t('load_error'), 'error');
         return;
     }
     if(lobbyAudio) lobbyAudio.pause();
-    window.location.href = '../game.html';
+
+    // LOADING orqali
+    window.location.href = '../loading.html';
 }
 
+// ============================================================
+// ADDONS EVENTS
+// ============================================================
 function setupAddonEvents(){
     var fileBtn = $('btnAddonFile');
     var fileInput = $('addonFileInput');
@@ -592,6 +602,9 @@ function setupAddonEvents(){
             reader.onload = function(ev){
                 try {
                     var map = JSON.parse(ev.target.result);
+                    if(!map.tiles || !map.width || !map.height){
+                        throw new Error(t('addon_invalid'));
+                    }
                     addAddon(map, file.name.replace('.json', ''));
                 } catch(err){
                     showToast(t('addon_invalid'), 'error');
@@ -750,7 +763,9 @@ function escapeHtml(s){
 // INIT
 // ============================================================
 function init(){
-    // Video — ovozsiz, avtomatik
+    console.log('[Menu] Initializing...');
+
+    // Video — ovozsiz
     var video = $('bg-video');
     if(video){
         video.muted = true;
@@ -760,12 +775,13 @@ function init(){
         });
     }
 
-    // Language ni qo'llash
+    // Language
     if(window.Lang){
         window.Lang.setLanguage(settings.language);
     }
     updateLanguage();
 
+    // Setup
     setupMenuButtons();
     setupBackButtons();
     setupSettingsEvents();

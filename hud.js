@@ -12,7 +12,7 @@ window.HUD = (function(){
   var aidProgressEl = null;
 
   // ============================================================
-  // HELPER — joriy qurol kalitini olish
+  // HELPERS
   // ============================================================
   function getWeaponKeyFromPlayer(p){
     if(!p) return 'pistol';
@@ -24,8 +24,29 @@ window.HUD = (function(){
     return 'pistol';
   }
 
+  // Ammo text hisoblash
+  function getAmmoText(p, wk, w){
+    if(!w) return '—';
+
+    if(wk === 'pistol'){
+      return (p.ammo.pistol || 0) + ' / ∞';
+    }
+    if(window.Weapons.isMelee(wk)){
+      return 'melee';
+    }
+    if(w.magSize){
+      var reserve = p.hasInfiniteAmmo ? '∞'
+                  : (p.reserve[wk] !== undefined ? p.reserve[wk] : 0);
+      return (p.ammo[wk] || 0) + ' / ' + reserve;
+    }
+    if(window.Weapons.isThrow(wk) || window.Weapons.isHeal(wk)){
+      return 'x' + (p.ammo[wk] || 0);
+    }
+    return '—';
+  }
+
   // ============================================================
-  // BANNER — katta markaziy matn
+  // BANNER
   // ============================================================
   function showBanner(text, color){
     var el = document.getElementById('center-banner');
@@ -38,7 +59,7 @@ window.HUD = (function(){
   }
 
   // ============================================================
-  // INTERACT PROMPT — "E — Pick up Ammo"
+  // PROMPT — E
   // ============================================================
   function showPrompt(text){
     if(!promptEl){
@@ -57,7 +78,6 @@ window.HUD = (function(){
     }
     promptEl.textContent = text;
     promptEl.style.display = 'block';
-
     clearTimeout(promptTimeout);
     promptTimeout = setTimeout(function(){
       if(promptEl) promptEl.style.display = 'none';
@@ -65,7 +85,7 @@ window.HUD = (function(){
   }
 
   // ============================================================
-  // AID PROGRESS BAR — 5 sekund
+  // AID PROGRESS
   // ============================================================
   function showAidProgress(pct){
     if(!aidProgressEl){
@@ -109,7 +129,7 @@ window.HUD = (function(){
     if(!game || !game.player) return;
     var p = game.player;
 
-    // Health bar (desktop)
+    // Health bar
     var pct = Math.max(0, p.hp / p.maxHp * 100);
     var bar = document.getElementById('healthBar');
     if(bar){
@@ -121,7 +141,7 @@ window.HUD = (function(){
     var hn = document.getElementById('healthNum');
     if(hn) hn.textContent = Math.ceil(p.hp);
 
-    // Score
+    // Score / kills
     var sr = document.getElementById('scoreRow');
     if(sr) sr.textContent = 'Score ' + game.score;
     var kn = document.getElementById('killsNum');
@@ -142,26 +162,51 @@ window.HUD = (function(){
   }
 
   // ============================================================
-  // INTERACT PROMPT — "E — Pick up ..."
+  // INTERACT PROMPT
   // ============================================================
   function updateInteractPrompt(game){
     var p = game.player;
-    var INTERACT_RANGE = 60;
+    var RANGE = 60;
 
     // Radio
     if(game.radioPickup && !game.hasRadio){
       var rp = game.radioPickup;
       var d = Math.hypot(rp.x - p.x, rp.y - p.y);
-      if(d < INTERACT_RANGE){
+      if(d < RANGE){
         showPrompt('E — Pick up Radio');
         return;
       }
     }
 
+    // Keyed object
+    if(window.World && window.World.getMap){
+      var map = window.World.getMap();
+      if(map){
+        var cx = Math.floor(p.x / 32);
+        var cy = Math.floor(p.y / 32);
+        for(var dy = -1; dy <= 1; dy++){
+          for(var dx = -1; dx <= 1; dx++){
+            var tx = cx + dx, ty = cy + dy;
+            if(tx < 0 || tx >= map.width || ty < 0 || ty >= map.height) continue;
+            var tileId = map.tiles[ty][tx];
+            var flags = window.World.getTileFlags(tileId);
+            if(flags.keyed && flags.keyedType){
+              var wx = tx * 32 + 16;
+              var wy = ty * 32 + 16;
+              var d2 = Math.hypot(p.x - wx, p.y - wy);
+              if(d2 < RANGE){
+                showPrompt('E — ' + getKeyedName(flags.keyedType));
+                return;
+              }
+            }
+          }
+        }
+      }
+    }
+
     // Pickup
     var bestName = null;
-    var bestDist = INTERACT_RANGE;
-
+    var bestDist = RANGE;
     for(var i = 0; i < game.pickups.length; i++){
       var pk = game.pickups[i];
       var dp = Math.hypot(pk.x - p.x, pk.y - p.y);
@@ -170,13 +215,24 @@ window.HUD = (function(){
         bestName = getPickupName(pk.type);
       }
     }
-
     if(bestName){
       showPrompt('E — Pick up ' + bestName);
       return;
     }
+  }
 
-    // Agar hech narsa yaqin bo'lmasa — prompt o'chadi (timeout bilan)
+  function getKeyedName(type){
+    var names = {
+      radio: 'Use Radio',
+      door: 'Open Door',
+      gate: 'Open Gate',
+      turret: 'Use Turret',
+      lever: 'Pull Lever',
+      button: 'Press Button',
+      generator: 'Start Generator',
+      elevator: 'Call Elevator'
+    };
+    return names[type] || 'Use';
   }
 
   function getPickupName(type){
@@ -190,7 +246,7 @@ window.HUD = (function(){
     if(type === 'syringe') return 'Syringe';
     if(type === 'pills') return 'Pills';
     if(type === 'laser') return 'Laser Sight';
-    if(type === 'ammo_patron') return 'Patron (∞ Ammo)';
+    if(type === 'ammo_patron') return 'Patron (∞)';
     return 'Item';
   }
 
@@ -209,21 +265,11 @@ window.HUD = (function(){
     var wNameEl = document.getElementById('ammoWeapon');
     var reloadEl = document.getElementById('reloadTag');
 
-    var ammoText = '';
-    if(wk === 'pistol'){
-      ammoText = (p.ammo.pistol || 0) + ' / ∞';
-    } else if(window.Weapons.isMelee(wk)){
-      ammoText = 'melee';
-    } else if(w.magSize){
-      var reserveText = p.hasInfiniteAmmo ? '∞' : (p.reserve[wk] != null ? p.reserve[wk] : '—');
-      ammoText = (p.ammo[wk] || 0) + ' / ' + reserveText;
-    } else if(window.Weapons.isThrow(wk) || window.Weapons.isHeal(wk)){
-      ammoText = 'x' + (p.ammo[wk] || 0);
-    } else {
-      ammoText = '—';
-    }
+    var ammoText = getAmmoText(p, wk, w);
 
-    if(wEl) wEl.innerHTML = '<span class="cur">' + w.name + '</span> — <span class="ammo">' + ammoText + '</span>';
+    if(wEl){
+      wEl.innerHTML = '<span class="cur">' + w.name + '</span> — <span class="ammo">' + ammoText + '</span>';
+    }
     if(wNameEl) wNameEl.textContent = w.name;
     if(ammoEl) ammoEl.textContent = ammoText;
 
@@ -235,41 +281,54 @@ window.HUD = (function(){
   }
 
   // ============================================================
-  // SLOTS HUD
+  // SLOTS HUD — TUZATILGAN
   // ============================================================
   function updateSlots(game){
     var p = game.player;
     if(!window.Weapons) return;
 
+    // === SLOT 1 ===
     var s1n = document.getElementById('slot1Name');
     var s1s = document.getElementById('slot1Sub');
     if(s1n) s1n.textContent = window.Weapons.name(p.slot1);
+
     var s1Ammo = '';
-    if(p.slot1 === 'shotgun') s1Ammo = (p.reserve.shotgun || 0) + '';
+    if(p.slot1 === 'uzi') s1Ammo = (p.reserve.uzi !== undefined ? p.reserve.uzi : 0) + '';
+    else if(p.slot1 === 'shotgun') s1Ammo = (p.reserve.shotgun || 0) + '';
     else if(p.slot1 === 'rifle') s1Ammo = (p.reserve.rifle || 0) + '';
     else if(p.slot1 === 'smg') s1Ammo = (p.reserve.smg || 0) + '';
-    else if(p.slot1 === 'grenadeLauncher') s1Ammo = (p.reserve.grenadeLauncher || 0) + '';
+    else if(p.slot1 === 'mp5') s1Ammo = (p.reserve.mp5 || 0) + '';
+    else if(p.slot1 === 'ak47') s1Ammo = (p.reserve.ak47 || 0) + '';
     else if(p.slot1 === 'sniper') s1Ammo = (p.reserve.sniper || 0) + '';
+    else s1Ammo = (p.reserve[p.slot1] || p.ammo[p.slot1] || 0) + '';
+
     if(s1s) s1s.textContent = s1Ammo || 'empty';
 
+    // === SLOT 2 ===
     var s2n = document.getElementById('slot2Name');
     var s2s = document.getElementById('slot2Sub');
     if(s2n) s2n.textContent = window.Weapons.name(p.slot2);
     if(s2s) s2s.textContent = (p.slot2 === 'pistol') ? '∞' : 'melee';
 
+    // === SLOT 3 ===
+    var s3n = document.getElementById('slot3Name');
     var s3s = document.getElementById('slot3Sub');
-    if(s3s) s3s.textContent = p.ammo.aid || 0;
+    if(s3n) s3n.textContent = window.Weapons.name(p.slot3 || 'aid');
+    if(s3s) s3s.textContent = (p.ammo.aid || 0) + '';
 
+    // === SLOT 4 ===
     var s4n = document.getElementById('slot4Name');
     var s4s = document.getElementById('slot4Sub');
     if(s4n) s4n.textContent = window.Weapons.name(p.slot4);
-    if(s4s) s4s.textContent = p.ammo[p.slot4] || 0;
+    if(s4s) s4s.textContent = (p.ammo[p.slot4] || 0) + '';
 
+    // === SLOT 5 ===
     var s5n = document.getElementById('slot5Name');
     var s5s = document.getElementById('slot5Sub');
     if(s5n) s5n.textContent = window.Weapons.name(p.slot5);
-    if(s5s) s5s.textContent = p.ammo[p.slot5] || 0;
+    if(s5s) s5s.textContent = (p.ammo[p.slot5] || 0) + '';
 
+    // === ACTIVE SLOT ===
     var slots = document.querySelectorAll('#slotsHud .slot');
     for(var i = 0; i < slots.length; i++){
       var n = parseInt(slots[i].getAttribute('data-slot'), 10);
@@ -351,6 +410,7 @@ window.HUD = (function(){
     if(!window.Controller || !window.Controller.isMobile()) return;
     var p = game.player;
 
+    // Health
     var pct = Math.max(0, p.hp / p.maxHp * 100);
     var mBar = document.getElementById('mHealthBar');
     if(mBar){
@@ -365,20 +425,21 @@ window.HUD = (function(){
     var mKills = document.getElementById('mKillsNum');
     if(mKills) mKills.textContent = game.kills;
 
+    // Slots
     var s1 = document.getElementById('mSlot1Ammo');
-    if(s1) s1.textContent = (p.reserve && p.reserve[p.slot1]) || (p.ammo && p.ammo[p.slot1]) || '0';
+    if(s1) s1.textContent = (p.reserve[p.slot1] !== undefined ? p.reserve[p.slot1] : (p.ammo[p.slot1] || 0)) + '';
 
     var s2 = document.getElementById('mSlot2Ammo');
     if(s2) s2.textContent = (p.slot2 === 'pistol') ? '∞' : 'M';
 
     var s3 = document.getElementById('mSlot3Ammo');
-    if(s3) s3.textContent = p.ammo.aid || 0;
+    if(s3) s3.textContent = (p.ammo.aid || 0) + '';
 
     var s4 = document.getElementById('mSlot4Ammo');
-    if(s4) s4.textContent = p.ammo[p.slot4] || 0;
+    if(s4) s4.textContent = (p.ammo[p.slot4] || 0) + '';
 
     var s5 = document.getElementById('mSlot5Ammo');
-    if(s5) s5.textContent = p.ammo[p.slot5] || 0;
+    if(s5) s5.textContent = (p.ammo[p.slot5] || 0) + '';
 
     var mslots = document.querySelectorAll('.m-slot');
     for(var i = 0; i < mslots.length; i++){
@@ -387,6 +448,7 @@ window.HUD = (function(){
       else mslots[i].classList.remove('active');
     }
 
+    // Mobile Call
     var mCallBtn = document.getElementById('mCallBtn');
     if(mCallBtn){
       if(game.hasRadio && game.heli.state === 'none'){
@@ -398,6 +460,7 @@ window.HUD = (function(){
       }
     }
 
+    // Mobile Heli timer
     var mHeliTimer = document.getElementById('mHeliTimer');
     if(mHeliTimer){
       var h = game.heli;
@@ -493,35 +556,13 @@ window.HUD = (function(){
   }
 
   function showGameOverAfterCredits(){
-  if(window.__pendingGameOver){
-    var po = window.__pendingGameOver;
-    window.__pendingGameOver = null;
-    showGameOver(po.game, po.title, po.status, po.isWin);
-
-    // FIX: End credits tugagach music unlock
-    // Lekin afterhelp.mp3 davom etaveradi main menu'ga qaytguncha
-    // Music.stop() faqat restartGame() da chaqiriladi
-    console.log('[HUD] Credits ended, music still playing');
+    if(window.__pendingGameOver){
+      var po = window.__pendingGameOver;
+      window.__pendingGameOver = null;
+      showGameOver(po.game, po.title, po.status, po.isWin);
+    }
   }
-}
 
-// Restart da music unlock
-function reset(){
-  if(window.Music){
-    window.Music.unlock();
-    window.Music.stopAll();
-  }
-  if(promptEl) promptEl.style.display = 'none';
-  if(aidProgressEl) aidProgressEl.style.display = 'none';
-  clearTimeout(bannerTimeout);
-  clearTimeout(promptTimeout);
-  var cb = document.getElementById('center-banner');
-  if(cb) cb.classList.remove('show');
-}
-
-  // ============================================================
-  // RESET — restart uchun
-  // ============================================================
   function reset(){
     if(promptEl) promptEl.style.display = 'none';
     if(aidProgressEl) aidProgressEl.style.display = 'none';

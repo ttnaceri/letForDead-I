@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+
+<!-- ═══════════════ PWA ═══════════════ -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Let For Dead I — Mod Maker" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="application-name" content="Let For Dead I — Mod Maker" />
+<meta name="theme-color" content="#0d0b0a" />
+
+<link rel="manifest" href="../manifest.json" />
+<link rel="apple-touch-icon" href="../image/letfordead.png" />
+<link rel="icon" type="image/png" href="../image/letfordead.png" />
+
+<title>Let For Dead I — Mod Maker</title>
+<link rel="stylesheet" href="modmaker.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ═══════════════ SIDEBAR ═══════════════ -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">MOD MAKER</div>
+      <div class="sidebar-sub">Let For Dead I</div>
+    </div>
+
+    <div class="tab-buttons">
+      <button class="tab-btn active" data-tab="zombies">
+        <span class="icon">🧟</span> Zombies
+      </button>
+      <button class="tab-btn" data-tab="weapons">
+        <span class="icon">🔫</span> Weapons
+      </button>
+    </div>
+
+    <div id="zombieList" class="mod-list"></div>
+    <div id="weaponList" class="mod-list" style="display:none;"></div>
+
+    <!-- MATERIAL PALETTE -->
+    <div id="palettePanel">
+      <div class="palette-header">
+        <span>🎨 MATERIALS</span>
+        <span class="palette-badge" id="paletteBadge">24</span>
+      </div>
+
+      <div class="palette-tabs">
+        <button class="ptab active" data-ptab="all">All</button>
+        <button class="ptab" data-ptab="skin">Skin</button>
+        <button class="ptab" data-ptab="metal">Metal</button>
+        <button class="ptab" data-ptab="wood">Wood</button>
+        <button class="ptab" data-ptab="cloth">Cloth</button>
+        <button class="ptab" data-ptab="detail">Detail</button>
+      </div>
+
+      <div id="paletteColors" class="palette-colors"></div>
+
+      <div class="palette-footer">
+        <input type="color" id="customColor" value="#c98a2e" class="custom-color">
+        <span class="custom-color-label">Custom</span>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <button class="action-btn primary" id="btnNewMod">➕ New</button>
+      <button class="action-btn" id="btnLoadMod">📂 Load</button>
+      <button class="action-btn" id="btnExportMod">⬇ Export</button>
+    </div>
+  </aside>
+
+  <!-- ═══════════════ MAIN ═══════════════ -->
+  <main id="main">
+    <div id="toolbar">
+      <button class="tool-btn active" id="toolBrush" data-tool="brush" title="B">
+        <span class="icon">✏️</span> Brush
+      </button>
+      <button class="tool-btn" id="toolEraser" data-tool="eraser" title="E">
+        <span class="icon">🧹</span> Eraser
+      </button>
+      <button class="tool-btn" id="toolPicker" data-tool="picker" title="I">
+        <span class="icon">💧</span> Picker
+      </button>
+      <button class="tool-btn" id="toolFill" data-tool="fill" title="F">
+        <span class="icon">🪣</span> Fill
+      </button>
+      <button class="tool-btn" id="toolLine" data-tool="line" title="L">
+        <span class="icon">➡️</span> Line
+      </button>
+      <button class="tool-btn" id="toolRect" data-tool="rect" title="R">
+        <span class="icon">▭</span> Rect
+      </button>
+
+      <div class="toolbar-sep"></div>
+
+      <button class="tool-btn" id="btnUndo" title="Ctrl+Z">
+        <span class="icon">↶</span> Undo
+      </button>
+      <button class="tool-btn" id="btnRedo" title="Ctrl+Shift+Z">
+        <span class="icon">↷</span> Redo
+      </button>
+
+      <div class="toolbar-sep"></div>
+
+      <button class="tool-btn" id="btnClear">
+        <span class="icon">🗑</span> Clear
+      </button>
+      <button class="tool-btn" id="btnTest" title="T">
+        <span class="icon">▶</span> Test
+      </button>
+
+      <div class="toolbar-sep"></div>
+
+      <button class="tool-btn active" id="btnGrid" title="G">
+        <span class="icon">▦</span> Grid
+      </button>
+
+      <div class="toolbar-spacer"></div>
+
+      <div id="pixelInfo">—</div>
+    </div>
+
+    <div id="canvas-wrap">
+      <canvas id="modCanvas"></canvas>
+      <canvas id="gridOverlay"></canvas>
+      <div id="canvasHint">RMB = Pan · LMB = Draw</div>
+    </div>
+
+    <div id="statusbar">
+      <div class="item"><span class="key">LMB</span> Draw</div>
+      <div class="item"><span class="key">RMB</span> <b>Pan</b></div>
+      <div class="item"><span class="key">Shift+LMB</span> Line</div>
+      <div class="item"><span class="key">Wheel</span> Zoom</div>
+      <div class="item"><span class="key">B</span> Brush</div>
+      <div class="item"><span class="key">E</span> Eraser</div>
+      <div class="item"><span class="key">I</span> Picker</div>
+      <div class="item"><span class="key">F</span> Fill</div>
+      <div class="item"><span class="key">L</span> Line</div>
+      <div class="item"><span class="key">R</span> Rect</div>
+      <div class="item"><span class="key">G</span> Grid</div>
+      <div class="item"><span class="key">T</span> Test</div>
+      <div class="item"><span class="key">Ctrl+Z</span> Undo</div>
+      <div class="item" id="statusInfo" style="margin-left:auto; color:#c98a2e;"></div>
+    </div>
+  </main>
+
+  <!-- ═══════════════ PROPERTIES ═══════════════ -->
+  <aside id="properties">
+
+    <!-- Zombie -->
+    <div id="zombieProps" class="props-panel">
+      <div class="props-header">
+        <div class="props-title">🧟 ZOMBIE PROPERTIES</div>
+      </div>
+      <div class="props-body">
+        <div class="setting-group">
+          <label>Name</label>
+          <input type="text" id="z_name" value="Custom Zombie" class="setting-input">
+        </div>
+
+        <div class="setting-group">
+          <label>Behavior</label>
+          <select id="z_behavior" class="setting-select"></select>
+        </div>
+
+        <div class="setting-group">
+          <label>HP</label>
+          <div class="setting-row">
+            <input type="range" id="z_hp" min="1" max="10000" value="50" step="1">
+            <input type="number" id="z_hp_num" min="1" max="10000" value="50" step="1">
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label>Speed</label>
+          <div class="setting-row">
+            <input type="range" id="z_speed" min="0.1" max="10" value="1.5" step="0.05">
+            <input type="number" id="z_speed_num" min="0.1" max="10" value="1.5" step="0.05">
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label>Damage</label>
+          <div class="setting-row">
+            <input type="range" id="z_dmg" min="0" max="200" value="10" step="1">
+            <input type="number" id="z_dmg_num" min="0" max="200" value="10" step="1">
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label>Radius</label>
+          <div class="setting-row">
+            <input type="range" id="z_radius" min="5" max="60" value="15" step="1">
+            <input type="number" id="z_radius_num" min="5" max="60" value="15" step="1">
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label>Score</label>
+          <div class="setting-row">
+            <input type="range" id="z_score" min="1" max="1000" value="10" step="1">
+            <input type="number" id="z_score_num" min="1" max="1000" value="10" step="1">
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label>Push Resistance</label>
+          <div class="setting-row">
+            <input type="range" id="z_push" min="1" max="50" value="20" step="1">
+            <input type="number" id="z_push_num" min="1" max="50" value="20" step="1">
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label>Color</label>
+          <div class="color-row">
+            <input type="color" id="z_color" value="#5c6e4f">
+            <input type="color" id="z_dark" value="#33402b">
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="z_big">
+            <span>Big zombie (loot drop)</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Weapon -->
+    <div id="weaponProps" class="props-panel" style="display:none;">
+      <div class="props-header">
+        <div class="props-title">🔫 WEAPON PROPERTIES</div>
+      </div>
+      <div class="props-body">
+        <div class="setting-group">
+          <label>Name</label>
+          <input type="text" id="w_name" value="Custom Weapon" class="setting-input">
+        </div>
+
+        <div class="setting-group">
+          <label>Kind</label>
+          <select id="w_kind" class="setting-select"></select>
+        </div>
+
+        <div class="setting-group">
+          <label>Slot</label>
+          <select id="w_slot" class="setting-select">
+            <option value="1">Slot 1</option>
+            <option value="2" selected>Slot 2</option>
+            <option value="3">Slot 3</option>
+            <option value="4">Slot 4</option>
+            <option value="5">Slot 5</option>
+          </select>
+        </div>
+
+        <div class="setting-group">
+          <label>Damage per Shot</label>
+          <div class="setting-row">
+            <input type="range" id="w_dmg" min="1" max="1000" value="25" step="1">
+            <input type="number" id="w_dmg_num" min="1" max="1000" value="25" step="1">
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label>Fire Rate (cooldown)</label>
+          <div class="setting-row">
+            <input type="range" id="w_cooldown" min="1" max="300" value="12" step="1">
+            <input type="number" id="w_cooldown_num" min="1" max="300" value="12" step="1">
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label>Bullet Speed</label>
+          <div class="setting-row">
+            <input type="range" id="w_bspeed" min="1" max="50" value="12" step="0.5">
+            <input type="number" id="w_bspeed_num" min="1" max="50" value="12" step="0.5">
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label>Spread</label>
+          <div class="setting-row">
+            <input type="range" id="w_spread" min="0" max="0.5" value="0.05" step="0.005">
+            <input type="number" id="w_spread_num" min="0" max="0.5" value="0.05" step="0.005">
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label>Pellets</label>
+          <div class="setting-row">
+            <input type="range" id="w_pellets" min="1" max="20" value="1" step="1">
+            <input type="number" id="w_pellets_num" min="1" max="20" value="1" step="1">
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label>Magazine Size</label>
+          <div class="setting-row">
+            <input type="range" id="w_mag" min="1" max="200" value="15" step="1">
+            <input type="number" id="w_mag_num" min="1" max="200" value="15" step="1">
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label>Reload Time</label>
+          <div class="setting-row">
+            <input type="range" id="w_reload" min="10" max="400" value="60" step="1">
+            <input type="number" id="w_reload_num" min="10" max="400" value="60" step="1">
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label>Max Ammo</label>
+          <div class="setting-row">
+            <input type="range" id="w_ammoMax" min="1" max="2000" value="200" step="1">
+            <input type="number" id="w_ammoMax_num" min="1" max="2000" value="200" step="1">
+          </div>
+        </div>
+
+        <!-- SNIPER fields -->
+        <div id="sniperFields" style="display:none;">
+          <div class="setting-group">
+            <label>Scope Zoom</label>
+            <div class="setting-row">
+              <input type="range" id="w_scopeZoom" min="1" max="5" value="1.5" step="0.1">
+              <input type="number" id="w_scopeZoom_num" min="1" max="5" value="1.5" step="0.1">
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <label>Pierce (zombie)</label>
+            <div class="setting-row">
+              <input type="range" id="w_pierce" min="1" max="10" value="1" step="1">
+              <input type="number" id="w_pierce_num" min="1" max="10" value="1" step="1">
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <label>Knockback</label>
+            <div class="setting-row">
+              <input type="range" id="w_knockback" min="0" max="100" value="0" step="1">
+              <input type="number" id="w_knockback_num" min="0" max="100" value="0" step="1">
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <label>Screen Shake</label>
+            <div class="setting-row">
+              <input type="range" id="w_screenShake" min="0" max="40" value="0" step="1">
+              <input type="number" id="w_screenShake_num" min="0" max="40" value="0" step="1">
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label>Shoot Sound</label>
+          <select id="w_sound" class="setting-select"></select>
+          <div id="w_sound_upload_wrap" class="upload-wrap" style="display:none;">
+            <label class="upload-label">📁 Upload shoot sound</label>
+            <input type="file" id="w_sound_file" accept="audio/*" class="upload-input">
+            <div id="w_sound_info" class="upload-info">No file</div>
+          </div>
+          <button class="action-btn small" id="w_sound_preview">▶ Preview</button>
+        </div>
+
+        <div class="setting-group">
+          <label>Reload Sound</label>
+          <select id="w_reloadSound" class="setting-select"></select>
+          <div id="w_reload_upload_wrap" class="upload-wrap" style="display:none;">
+            <label class="upload-label">📁 Upload reload sound</label>
+            <input type="file" id="w_reload_file" accept="audio/*" class="upload-input">
+            <div id="w_reload_info" class="upload-info">No file</div>
+          </div>
+          <button class="action-btn small" id="w_reload_preview">▶ Preview</button>
+        </div>
+
+        <div class="setting-group">
+          <label>Color</label>
+          <input type="color" id="w_color" value="#c98a2e" class="setting-color-full">
+        </div>
+
+        <div class="setting-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="w_infinite">
+            <span>Infinite ammo</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Parts -->
+    <div id="partsPanel" class="props-panel" style="display:none;">
+      <div class="props-header">
+        <div class="props-title">🔧 WEAPON PARTS</div>
+      </div>
+      <div class="props-body">
+        <div class="setting-hint">Click a part, then click canvas</div>
+        <div id="partsList" class="parts-list"></div>
+        <div id="currentPartInfo" class="current-part-info">No part selected</div>
+        <button class="action-btn small" id="btnClearParts">🗑 Clear all parts</button>
+      </div>
+    </div>
+
+    <!-- Test -->
+    <div id="testPanel" class="props-panel" style="display:none;">
+      <div class="props-header">
+        <div class="props-title">▶ TEST PREVIEW</div>
+      </div>
+      <div class="props-body">
+        <div class="test-preview">
+          <canvas id="testCanvas" width="200" height="200"></canvas>
+        </div>
+        <div id="testInfo" class="test-info"></div>
+      </div>
+    </div>
+
+  </aside>
+</div>
+
+<!-- ═══════════════ MODALS ═══════════════ -->
+<div class="modal-bg" id="loadModal">
+  <div class="modal">
+    <div class="modal-title">Load Mod</div>
+    <label>Paste mod JSON</label>
+    <textarea id="loadModText"></textarea>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" id="loadCancel">Cancel</button>
+      <button class="modal-btn primary" id="loadConfirm">Load</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="newModModal">
+  <div class="modal">
+    <div class="modal-title">New Mod</div>
+    <label>Type</label>
+    <select id="newModType" class="modal-select">
+      <option value="zombie">🧟 Zombie</option>
+      <option value="weapon">🔫 Weapon</option>
+    </select>
+    <label>Based on</label>
+    <select id="newModBase" class="modal-select">
+      <option value="">— Blank —</option>
+    </select>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" id="newModCancel">Cancel</button>
+      <button class="modal-btn primary" id="newModCreate">Create</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- ═══════════════ SCRIPTS ═══════════════ -->
+<script src="../pwa.js"></script>
+<script src="modmaker-data.js"></script>
+<script src="modmaker.js"></script>
+
+</body>
+</html>
