@@ -1,8 +1,8 @@
 {
   "name": "Let For Dead I",
-  "short_name": "LetForDead",
-  "description": "A survival horror zombie shooter inspired by Left 4 Dead 2",
-  "start_url": "./menu/menu.html",
+  "short_name": "Let For Dead I",
+  "description": "A survival horror zombie shooter game",
+  "start_url": "./splash.html",
   "scope": "./",
   "id": "/let-for-dead-i",
   "display": "fullscreen",
@@ -41,6 +41,13 @@
     }
   ],
   "shortcuts": [
+    {
+      "name": "Start Game",
+      "short_name": "Play",
+      "description": "Jump into the action",
+      "url": "./splash.html",
+      "icons": [{ "src": "image/letfordead.png", "sizes": "192x192" }]
+    },
     {
       "name": "Campaign",
       "short_name": "Campaign",

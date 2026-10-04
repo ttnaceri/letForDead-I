@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+
+<!-- ═══════════════ PWA ═══════════════ -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Let For Dead I" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="application-name" content="Let For Dead I" />
+<meta name="theme-color" content="#0d0b0a" />
+
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="image/letfordead.png" />
+<link rel="apple-touch-startup-image" href="image/entering-picture.png" />
+<link rel="icon" type="image/png" href="image/letfordead.png" />
+<link rel="shortcut icon" href="image/letfordead.png" />
+
+<title>Let For Dead I</title>
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0d0b0a;
+  color: #d8d1c2;
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Code', 'Courier New', monospace;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+/* ============================================================
+   SPLASH CONTAINER
+   ============================================================ */
+#splash {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #0d0b0a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity 0.6s ease;
+}
+
+#splash.fade-out {
+  opacity: 0;
+}
+
+/* ============================================================
+   SPLASH IMAGE — barcha qurilmalarga moslashadi
+   ============================================================ */
+.splash-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+
+  /* Kirish animatsiyasi */
+  animation: splashEnter 3s ease-out forwards;
+}
+
+@keyframes splashEnter {
+  0% {
+    opacity: 0;
+    transform: scale(1.08);
+    filter: brightness(0.4) blur(4px);
+  }
+  15% {
+    opacity: 1;
+    transform: scale(1.04);
+    filter: brightness(0.85) blur(0px);
+  }
+  30% {
+    transform: scale(1.0);
+    filter: brightness(1);
+  }
+  85% {
+    opacity: 1;
+    transform: scale(1.0);
+    filter: brightness(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.02);
+    filter: brightness(1.1);
+  }
+}
+
+/* ============================================================
+   VIGNETTE OVERLAY — rasm ustida
+   ============================================================ */
+.splash-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center,
+    rgba(0,0,0,0) 30%,
+    rgba(0,0,0,0.55) 70%,
+    rgba(0,0,0,0.92) 100%);
+  z-index: 2;
+}
+
+/* ============================================================
+   TITLE OVERLAY — rasm ustida
+   ============================================================ */
+.splash-title {
+  position: absolute;
+  bottom: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 3;
+  pointer-events: none;
+  padding: 0 20px;
+}
+
+.splash-title h1 {
+  font-family: 'Staatliches', 'Arial Narrow', sans-serif;
+  font-size: clamp(28px, 6vw, 56px);
+  letter-spacing: 8px;
+  color: #d8d1c2;
+  text-shadow:
+    3px 0 0 #a32f22,
+    -2px 0 0 rgba(107,143,63,0.5),
+    0 0 30px rgba(163,47,34,0.9),
+    0 0 60px rgba(163,47,34,0.5);
+  text-transform: uppercase;
+  opacity: 0;
+  animation: titleFade 3s ease-out forwards;
+}
+
+.splash-title .sub {
+  font-size: clamp(10px, 2vw, 14px);
+  letter-spacing: 6px;
+  color: #c98a2e;
+  text-transform: uppercase;
+  margin-top: 8px;
+  opacity: 0;
+  animation: titleFade 3s ease-out 0.3s forwards;
+  text-shadow: 0 0 12px rgba(201,138,46,0.8);
+}
+
+@keyframes titleFade {
+  0% { opacity: 0; transform: translateY(20px); }
+  20% { opacity: 0; }
+  40% { opacity: 1; transform: translateY(0); }
+  85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ============================================================
+   LOADING BAR — pastda
+   ============================================================ */
+.splash-loader {
+  position: absolute;
+  bottom: 6%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  max-width: 320px;
+  height: 3px;
+  background: rgba(163,47,34,0.15);
+  border-radius: 2px;
+  overflow: hidden;
+  z-index: 3;
+  opacity: 0;
+  animation: loaderFade 3s ease-out forwards;
+}
+
+.splash-loader::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #6b8f3f, #c98a2e, #e0523c);
+  border-radius: 2px;
+  animation: loaderFill 3s ease-out forwards;
+  box-shadow: 0 0 12px rgba(224,82,60,0.9);
+}
+
+@keyframes loaderFade {
+  0%, 25% { opacity: 0; }
+  40%, 85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes loaderFill {
+  0% { width: 0%; }
+  15% { width: 5%; }
+  40% { width: 40%; }
+  70% { width: 75%; }
+  90% { width: 95%; }
+  100% { width: 100%; }
+}
+
+/* ============================================================
+   SCANLINES — eski ekran effekti
+   ============================================================ */
+.splash-scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,0.15) 0px,
+    rgba(0,0,0,0.15) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  mix-blend-mode: overlay;
+  opacity: 0.5;
+  animation: scanlineShift 3s linear;
+}
+
+@keyframes scanlineShift {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 30px; }
+}
+
+/* ============================================================
+   BLOOD SPLATTER — random effektlar
+   ============================================================ */
+.splash-blood {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(163,47,34,0.4) 0%, transparent 12%),
+    radial-gradient(circle at 85% 75%, rgba(163,47,34,0.35) 0%, transparent 15%),
+    radial-gradient(circle at 45% 90%, rgba(163,47,34,0.3) 0%, transparent 10%);
+  animation: bloodPulse 3s ease-out forwards;
+}
+
+@keyframes bloodPulse {
+  0% { opacity: 0; }
+  40% { opacity: 0.7; }
+  70% { opacity: 0.5; }
+  100% { opacity: 0; }
+}
+
+/* ============================================================
+   MOBILE OPTIMIZATSIYA
+   ============================================================ */
+@media (max-width: 768px) {
+  .splash-title {
+    bottom: 14%;
+  }
+
+  .splash-title h1 {
+    letter-spacing: 5px;
+  }
+
+  .splash-title .sub {
+    letter-spacing: 4px;
+  }
+
+  .splash-loader {
+    width: 70%;
+    bottom: 8%;
+  }
+}
+
+/* ============================================================
+   LANDSCAPE (yotiq holat)
+   ============================================================ */
+@media (orientation: landscape) and (max-height: 500px) {
+  .splash-title {
+    bottom: 8%;
+  }
+
+  .splash-title h1 {
+    font-size: clamp(24px, 5vw, 42px);
+    letter-spacing: 6px;
+  }
+
+  .splash-title .sub {
+    font-size: clamp(9px, 1.5vw, 12px);
+    letter-spacing: 4px;
+    margin-top: 4px;
+  }
+
+  .splash-loader {
+    bottom: 5%;
+    height: 2px;
+  }
+}
+
+/* ============================================================
+   PORTRAIT (tik holat)
+   ============================================================ */
+@media (orientation: portrait) and (max-width: 500px) {
+  .splash-title h1 {
+    font-size: clamp(26px, 8vw, 44px);
+    letter-spacing: 4px;
+  }
+
+  .splash-loader {
+    width: 80%;
+    bottom: 10%;
+  }
+}
+
+/* ============================================================
+   TABLET / KATTA EKRANLAR
+   ============================================================ */
+@media (min-width: 1024px) {
+  .splash-title h1 {
+    font-size: clamp(40px, 5vw, 72px);
+    letter-spacing: 12px;
+  }
+
+  .splash-loader {
+    max-width: 400px;
+  }
+}
+
+/* ============================================================
+   KAM QUVVATLI QURILMALAR — animatsiya kamaytirish
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .splash-image {
+    animation: splashSimple 3s ease-out forwards;
+  }
+
+  @keyframes splashSimple {
+    0% { opacity: 0; }
+    15% { opacity: 1; }
+    85% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  .splash-scanlines {
+    animation: none;
+    opacity: 0.3;
+  }
+}
+</style>
+</head>
+<body>
+<div id="splash">
+  <img
+    src="image/entering-picture.png"
+    alt="Let For Dead I"
+    class="splash-image"
+    id="splashImage"
+    draggable="false"
+  >
+<script src="pwa.js"></script>
+
+<script>
+(function(){
+'use strict';
+
+// ============================================================
+// CONFIG
+// ============================================================
+var SPLASH_DURATION = 3000;        // 3 sekund
+var NEXT_PAGE = 'menu/menu.html';  // Menu sahifasiga o'tish
+var FADE_DURATION = 600;           // Fade out animatsiya
+
+// ============================================================
+// STATE
+// ============================================================
+var startTime = Date.now();
+var navigated = false;
+
+// ============================================================
+// PRELOAD MENU — fonda yuklash
+// ============================================================
+function preloadMenu(){
+  // Menu HTML ni oldindan yuklash
+  var link = document.createElement('link');
+  link.rel = 'prefetch';
+  link.href = NEXT_PAGE;
+  document.head.appendChild(link);
+
+  // Menu CSS ni oldindan yuklash
+  var cssLink = document.createElement('link');
+  cssLink.rel = 'prefetch';
+  cssLink.href = 'menu/menu.css';
+  document.head.appendChild(cssLink);
+
+  // Menu JS ni oldindan yuklash
+  var jsLink = document.createElement('link');
+  jsLink.rel = 'prefetch';
+  jsLink.href = 'menu/menu.js';
+  document.head.appendChild(jsLink);
+
+  // Logo rasmini oldindan yuklash
+  var img = new Image();
+  img.src = 'image/letfordead.png';
+}
+
+// ============================================================
+// NAVIGATE TO MENU
+// ============================================================
+function goToMenu(){
+  if(navigated) return;
+  navigated = true;
+
+  var splash = document.getElementById('splash');
+  if(splash){
+    splash.classList.add('fade-out');
+  }
+
+  setTimeout(function(){
+    window.location.href = NEXT_PAGE;
+  }, FADE_DURATION);
+}
+
+// ============================================================
+// TIMER
+// ============================================================
+function startTimer(){
+  setTimeout(goToMenu, SPLASH_DURATION);
+}
+
+// ============================================================
+// CHECK IMAGE LOAD
+// ============================================================
+function checkImage(){
+  var img = document.getElementById('splashImage');
+  if(!img) return;
+
+  // Agar rasm topilmasa — fallback background
+  img.onerror = function(){
+    console.warn('[Splash] Rasm topilmadi:', img.src);
+    img.style.display = 'none';
+    document.getElementById('splash').style.background =
+      'radial-gradient(ellipse at center, #17130f 0%, #0d0b0a 60%, #000 100%)';
+  };
+
+  // Rasm yuklanishi bilan darhol
+  if(img.complete){
+    console.log('[Splash] Image cached');
+  } else {
+    img.onload = function(){
+      console.log('[Splash] Image loaded');
+    };
+  }
+}
+
+// ============================================================
+// SKIP ON CLICK/TAP (ixtiyoriy — 3 sekunddan oldin)
+// ============================================================
+function setupSkip(){
+  var splash = document.getElementById('splash');
+  if(!splash) return;
+
+  function skip(){
+    var elapsed = Date.now() - startTime;
+    // Minimal 1 sekund kutish kerak (rasm ko'rinsin)
+    if(elapsed < 1000) return;
+
+    console.log('[Splash] Skipped after', elapsed, 'ms');
+    goToMenu();
+  }
+
+  splash.addEventListener('click', skip);
+  splash.addEventListener('touchstart', skip, { passive: true });
+  splash.addEventListener('keydown', function(e){
+    if(e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') skip();
+  });
+}
+
+// ============================================================
+// SCREEN ORIENTATION
+// ============================================================
+function setupOrientation(){
+  function handleOrientation(){
+    // Rasm object-fit: cover bilan avtomatik moslashadi
+    // Lekin qurilma o'zgarishini log qilamiz
+    console.log('[Splash] Orientation:', window.orientation || 'unknown');
+  }
+
+  window.addEventListener('orientationchange', handleOrientation);
+  window.addEventListener('resize', handleOrientation);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+function init(){
+  console.log('[Splash] Started');
+  console.log('[Splash] Duration: 3 seconds');
+
+  checkImage();
+  preloadMenu();
+  setupSkip();
+  setupOrientation();
+  startTimer();
+}
+
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+
+})();
+</script>
+
+</body>
+</html>
