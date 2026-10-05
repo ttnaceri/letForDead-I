@@ -9,7 +9,6 @@ window.Zombies = (function(){
   // ZOMBIE TYPES
   // ============================================================
   var TYPES = {
-    // --- Oddiy ---
     common: {
       name: 'Common Infected',
       r: 15, speed: 1.05, hp: 28, dmg: 8,
@@ -28,8 +27,6 @@ window.Zombies = (function(){
       color: '#4a3f55', dark: '#241f2c',
       score: 50, big: true, pushDist: 6
     },
-
-    // --- SPITTER ---
     spitter: {
       name: 'Spitter',
       r: 14, speed: 0.9, hp: 26, dmg: 0,
@@ -42,8 +39,6 @@ window.Zombies = (function(){
       spitCooldownMin: 130,
       spitCooldownMax: 190
     },
-
-    // --- SMOKER — tili bilan tortadi (L4D2: 4s choke) ---
     smoker: {
       name: 'Smoker',
       r: 16, speed: 1.0, hp: 50, dmg: 12,
@@ -53,12 +48,10 @@ window.Zombies = (function(){
       tongueRange: 380,
       tongueSpeed: 8,
       tonguePullPower: 3.2,
-      tongueChokeDuration: 240,   // 4 sekund (L4D2)
+      tongueChokeDuration: 240,
       tongueDamagePerSec: 6,
       tongueCooldown: 200
     },
-
-    // --- BOOMER ---
     boomer: {
       name: 'Boomer',
       r: 20, speed: 0.85, hp: 40, dmg: 0,
@@ -69,8 +62,6 @@ window.Zombies = (function(){
       vomitDuration: 240,
       vomitBotDuration: 180
     },
-
-    // --- HUNTER — sakrab yerga yiqitadi (L4D2: 5s pin) ---
     hunter: {
       name: 'Hunter',
       r: 13, speed: 3.4, hp: 24, dmg: 16,
@@ -80,11 +71,9 @@ window.Zombies = (function(){
       pounceRange: 260,
       pouncePower: 7.5,
       pounceDuration: 26,
-      pinDuration: 300,          // 5 sekund
+      pinDuration: 300,
       pinDamagePerSec: 8
     },
-
-    // --- JOCKEY — sakrab boshqaradi (L4D2: 4s ride) ---
     jockey: {
       name: 'Jockey',
       r: 12, speed: 3.0, hp: 30, dmg: 14,
@@ -94,12 +83,10 @@ window.Zombies = (function(){
       pounceRange: 200,
       pouncePower: 7.0,
       pounceDuration: 26,
-      rideDuration: 240,          // 4 sekund
+      rideDuration: 240,
       rideDamagePerSec: 10,
       rideSteerSpeed: 3.5
     },
-
-    // --- CHARGER ---
     charger: {
       name: 'Charger',
       r: 22, speed: 1.6, hp: 120, dmg: 22,
@@ -113,8 +100,6 @@ window.Zombies = (function(){
       slamDamage: 30,
       slamRadius: 90
     },
-
-    // --- WITCH ---
     witch: {
       name: 'Witch',
       r: 18, speed: 5.0, hp: 200, dmg: 40,
@@ -127,11 +112,9 @@ window.Zombies = (function(){
       crippleDuration: 300,
       crippleSpeedMult: 0.30
     },
-
-    // --- TANK ---
     tank: {
       name: 'TANK',
-      r: 42, speed: 1.1, hp: 5236, dmg: 60,   // 238 pistol o'q
+      r: 42, speed: 1.1, hp: 5236, dmg: 60,
       color: '#3a2a2a', dark: '#1a1010',
       score: 300, big: true, pushDist: 2,
       tank: true,
@@ -150,22 +133,45 @@ window.Zombies = (function(){
   function listTypes(){ return Object.keys(TYPES); }
 
   // ============================================================
-  // SPAWN
+  // SOLID CHECK HELPER
+  // ============================================================
+  function canMoveTo(x, y){
+    if(!window.World || !window.World.isSolidAt) return true;
+    return !window.World.isSolidAt(x, y);
+  }
+
+  // ============================================================
+  // SPAWN — faqat spawn pointlardan
   // ============================================================
   function spawn(game, type, canvasW, canvasH){
-    var p = game.player;
-    var ang = Math.random() * Math.PI * 2;
-    var dist = Math.hypot(canvasW, canvasH) * 0.6 + 80 + Math.random() * 200;
-    if(game.hordeActive && game.heli.state === 'incoming'){
-      dist = Math.hypot(canvasW, canvasH) * 0.55 + 60 + Math.random() * 100;
-    }
-    var x = p.x + Math.cos(ang) * dist;
-    var y = p.y + Math.sin(ang) * dist;
     var cfg = TYPES[type];
+    if(!cfg) return;
+
+    // === SPAWN POINTLARDAN ===
+    var spawnPoints = null;
+    if(window.World && window.World.getZombieSpawns){
+      spawnPoints = window.World.getZombieSpawns();
+    }
+
+    var spawnX, spawnY;
+
+    if(spawnPoints && spawnPoints.length > 0){
+      // Tasodifiy spawn point
+      var sp = spawnPoints[Math.floor(Math.random() * spawnPoints.length)];
+      spawnX = sp.x + (Math.random() - 0.5) * 40;
+      spawnY = sp.y + (Math.random() - 0.5) * 40;
+    } else {
+      // Fallback — ekrandan tashqarida
+      var p = game.player;
+      var ang = Math.random() * Math.PI * 2;
+      var dist = Math.hypot(canvasW, canvasH) * 0.6 + 80 + Math.random() * 200;
+      spawnX = p.x + Math.cos(ang) * dist;
+      spawnY = p.y + Math.sin(ang) * dist;
+    }
 
     game.zombies.push({
       type: type,
-      x: x, y: y,
+      x: spawnX, y: spawnY,
       r: cfg.r,
       hp: cfg.hp, maxHp: cfg.hp,
       speed: cfg.speed, dmg: cfg.dmg,
@@ -270,36 +276,33 @@ window.Zombies = (function(){
   }
 
   // ============================================================
-  // HARAKAT YORDAMCHILARI
+  // HARAKAT — devor tekshiruvi bilan
   // ============================================================
-  function moveToward(z, ux, uy, speed, dt){
-    z.x += ux * speed * dt;
-    z.y += uy * speed * dt;
-  }
-  function moveAway(z, ux, uy, speed, dt){
-    z.x -= ux * speed * dt;
-    z.y -= uy * speed * dt;
-  }
-  function applyWander(z, ux, uy, dt, strength){
-    z.wanderTimer -= dt;
-    if(z.wanderTimer <= 0){
-      z.wanderAngle = (Math.random() - 0.5) * 1.2;
-      z.wanderTimer = 40 + Math.random() * 40;
-    }
-    var perpX = -uy, perpY = ux;
-    z.x += perpX * z.wanderAngle * (strength || 0.5) * dt;
-    z.y += perpY * z.wanderAngle * (strength || 0.5) * dt;
+  function tryMove(z, dx, dy){
+    var newX = z.x + dx;
+    var newY = z.y + dy;
+
+    if(canMoveTo(newX, z.y)) z.x = newX;
+    if(canMoveTo(z.x, newY)) z.y = newY;
   }
 
   // ============================================================
-  // BEHAVIOR: Ranged (spitter)
+  // BEHAVIOR: Ranged
   // ============================================================
   function behaveRanged(game, z, cfg, dx, dy, dist, ux, uy, speedMul, dt){
     z.spitCooldown -= dt;
     var pref = cfg.preferDist || 260;
-    if(dist > pref + 20) moveToward(z, ux, uy, z.speed * speedMul, dt);
-    else if(dist < pref - 20) moveAway(z, ux, uy, z.speed * speedMul, dt);
-    else applyWander(z, ux, uy, dt, 0.7);
+
+    if(dist > pref + 20) tryMove(z, ux * z.speed * speedMul * dt, uy * z.speed * speedMul * dt);
+    else if(dist < pref - 20) tryMove(z, -ux * z.speed * speedMul * dt, -uy * z.speed * speedMul * dt);
+    else {
+      z.wanderTimer -= dt;
+      if(z.wanderTimer <= 0){
+        z.wanderAngle = (Math.random() - 0.5) * 1.2;
+        z.wanderTimer = 40 + Math.random() * 40;
+      }
+      tryMove(z, -uy * z.wanderAngle * 0.6 * dt, ux * z.wanderAngle * 0.6 * dt);
+    }
 
     if(z.spitCooldown <= 0 && dist < 520){
       z.spitCooldown = (cfg.spitCooldownMin || 130) +
@@ -319,12 +322,11 @@ window.Zombies = (function(){
   }
 
   // ============================================================
-  // BEHAVIOR: Hunter — sakrab yiqitadi (L4D2)
+  // BEHAVIOR: Hunter
   // ============================================================
   function behaveHunter(game, z, cfg, dx, dy, dist, ux, uy, speedMul, dt){
     if(z.isPouncing){
-      z.x += z.pounceDx * dt;
-      z.y += z.pounceDy * dt;
+      tryMove(z, z.pounceDx * dt, z.pounceDy * dt);
       z.pounceTimer -= dt;
 
       var p = z.target;
@@ -332,10 +334,11 @@ window.Zombies = (function(){
         if(!game.player.pinned){
           game.player.pinned = {
             zombie: z,
-            timer: cfg.pinDuration || 300,     // 5 sekund
+            timer: cfg.pinDuration || 300,
             damageTimer: 0,
             kind: 'hunter'
           };
+          game.player.controlBlocked = true;
           z.isPouncing = false;
           z.pounceTimer = 0;
         }
@@ -352,27 +355,27 @@ window.Zombies = (function(){
       z.pounceDx = ux * (cfg.pouncePower || 7.5);
       z.pounceDy = uy * (cfg.pouncePower || 7.5);
     } else {
-      moveToward(z, ux, uy, z.speed * speedMul, dt);
+      tryMove(z, ux * z.speed * speedMul * dt, uy * z.speed * speedMul * dt);
     }
   }
 
   // ============================================================
-  // BEHAVIOR: Jockey — sakrab boshqaradi (L4D2)
+  // BEHAVIOR: Jockey
   // ============================================================
   function behaveJockey(game, z, cfg, dx, dy, dist, ux, uy, speedMul, dt){
     if(z.isPouncing){
-      z.x += z.pounceDx * dt;
-      z.y += z.pounceDy * dt;
+      tryMove(z, z.pounceDx * dt, z.pounceDy * dt);
       z.pounceTimer -= dt;
       var p = z.target;
       if(p && p.isPlayer && Math.hypot(p.x-z.x, p.y-z.y) < z.r + p.r + 6){
         if(!game.player.ridden){
           game.player.ridden = {
             zombie: z,
-            timer: cfg.rideDuration || 240,    // 4 sekund
+            timer: cfg.rideDuration || 240,
             damageTimer: 0,
             steerAngle: Math.random() * Math.PI * 2
           };
+          game.player.controlBlocked = true;
           z.isPouncing = false;
           z.pounceTimer = 0;
         }
@@ -387,7 +390,7 @@ window.Zombies = (function(){
       z.pounceDx = ux * (cfg.pouncePower || 7.0);
       z.pounceDy = uy * (cfg.pouncePower || 7.0);
     } else {
-      moveToward(z, ux, uy, z.speed * speedMul, dt);
+      tryMove(z, ux * z.speed * speedMul * dt, uy * z.speed * speedMul * dt);
     }
   }
 
@@ -395,14 +398,14 @@ window.Zombies = (function(){
   // BEHAVIOR: Boomer
   // ============================================================
   function behaveBoomer(game, z, cfg, dx, dy, dist, ux, uy, speedMul, dt){
-    moveToward(z, ux, uy, z.speed * speedMul, dt);
+    tryMove(z, ux * z.speed * speedMul * dt, uy * z.speed * speedMul * dt);
     if(z.vomitCooldown > 0) z.vomitCooldown -= dt;
     if(dist < (cfg.vomitRange || 180) && (z.vomitCooldown == null || z.vomitCooldown <= 0)){
       z.vomitCooldown = 999;
       var p = z.target;
       if(p.isPlayer) game.player.vomitTimer = cfg.vomitDuration || 240;
       else p.vomitTimer = cfg.vomitBotDuration || 180;
-      window.Zombies.damagePlayer(game, 5);
+      damagePlayer(game, 5);
       spawnParticles(game, z.x, z.y, 30, '#7a9a3a', 6);
       game.shake = 8;
       z.hp = 0;
@@ -417,8 +420,7 @@ window.Zombies = (function(){
     if(z.chargeCooldown > 0) z.chargeCooldown -= dt;
 
     if(z.isCharging){
-      z.x += z.chargeDX * dt;
-      z.y += z.chargeDY * dt;
+      tryMove(z, z.chargeDX * dt, z.chargeDY * dt);
       z.chargerTimer -= dt;
       var p = z.target;
       if(p && p.isPlayer && Math.hypot(p.x-z.x, p.y-z.y) < z.r + p.r + 4){
@@ -430,6 +432,7 @@ window.Zombies = (function(){
             chargeDX: z.chargeDX,
             chargeDY: z.chargeDY
           };
+          game.player.controlBlocked = true;
           z.isCharging = false;
           z.chargerTimer = 0;
           z.chargeCooldown = cfg.chargeCooldown || 180;
@@ -448,7 +451,7 @@ window.Zombies = (function(){
       z.chargeDX = ux * (cfg.chargePower || 10);
       z.chargeDY = uy * (cfg.chargePower || 10);
     } else {
-      moveToward(z, ux, uy, z.speed * speedMul, dt);
+      tryMove(z, ux * z.speed * speedMul * dt, uy * z.speed * speedMul * dt);
     }
   }
 
@@ -463,13 +466,12 @@ window.Zombies = (function(){
         z.wanderAngle = Math.random() * Math.PI * 2;
         z.wanderTimer = 90;
       }
-      z.x += Math.cos(z.wanderAngle) * 0.3 * dt;
-      z.y += Math.sin(z.wanderAngle) * 0.3 * dt;
+      tryMove(z, Math.cos(z.wanderAngle) * 0.3 * dt, Math.sin(z.wanderAngle) * 0.3 * dt);
       if(dist < (cfg.aggroRange || 250)) z.witchAggro = true;
       return;
     }
     if(dist > z.r + 20){
-      moveToward(z, ux, uy, z.speed * speedMul, dt);
+      tryMove(z, ux * z.speed * speedMul * dt, uy * z.speed * speedMul * dt);
     } else if(z.clawCooldown <= 0){
       z.clawCooldown = cfg.clawCooldown || 90;
       var p = z.target;
@@ -529,7 +531,7 @@ window.Zombies = (function(){
       });
       window.SFX.sfx.throwItem();
     }
-    moveToward(z, ux, uy, z.speed * speedMul, dt);
+    tryMove(z, ux * z.speed * speedMul * dt, uy * z.speed * speedMul * dt);
   }
 
   // ============================================================
@@ -549,9 +551,10 @@ window.Zombies = (function(){
           t.hit = true;
           game.player.smoked = {
             zombie: z,
-            timer: cfg.tongueChokeDuration || 240,   // 4 sekund
+            timer: cfg.tongueChokeDuration || 240,
             damageTimer: 0
           };
+          game.player.controlBlocked = true;
           z.tongue = null;
           return;
         }
@@ -561,9 +564,13 @@ window.Zombies = (function(){
     }
 
     var pref = 320;
-    if(dist > pref + 30) moveToward(z, ux, uy, z.speed * dt, dt);
-    else if(dist < pref - 30) moveAway(z, ux, uy, z.speed * dt, dt);
-    else applyWander(z, ux, uy, dt, 0.5);
+    if(dist > pref + 30) tryMove(z, ux * z.speed * dt, uy * z.speed * dt);
+    else if(dist < pref - 30) tryMove(z, -ux * z.speed * dt, -uy * z.speed * dt);
+    else {
+      z.wanderTimer -= dt;
+      if(z.wanderTimer <= 0){ z.wanderAngle = (Math.random()-0.5)*1; z.wanderTimer = 40; }
+      tryMove(z, -uy * z.wanderAngle * 0.4 * dt, ux * z.wanderAngle * 0.4 * dt);
+    }
 
     if(z.tongueCooldown <= 0 && dist < (cfg.tongueRange || 380)){
       z.tongueCooldown = cfg.tongueCooldown || 200;
@@ -581,7 +588,7 @@ window.Zombies = (function(){
   }
 
   // ============================================================
-  // BEHAVIOR: Common / Runner / Brute
+  // BEHAVIOR: Common
   // ============================================================
   function behaveCommon(game, z, ux, uy, speedMul, dt){
     z.wanderTimer -= dt;
@@ -591,8 +598,11 @@ window.Zombies = (function(){
     }
     var wobbleX = -uy * z.wanderAngle;
     var wobbleY = ux * z.wanderAngle;
-    z.x += (ux + wobbleX * 0.5) * z.speed * speedMul * dt;
-    z.y += (uy + wobbleY * 0.5) * z.speed * speedMul * dt;
+
+    var moveX = (ux + wobbleX * 0.5) * z.speed * speedMul;
+    var moveY = (uy + wobbleY * 0.5) * z.speed * speedMul;
+
+    tryMove(z, moveX * dt, moveY * dt);
   }
 
   // ============================================================
@@ -601,9 +611,9 @@ window.Zombies = (function(){
   function update(game, z, dt){
     var cfg = TYPES[z.type];
 
+    // Push harakat
     if(Math.abs(z.pushVX) > 0.1 || Math.abs(z.pushVY) > 0.1){
-      z.x += z.pushVX * dt;
-      z.y += z.pushVY * dt;
+      tryMove(z, z.pushVX * dt, z.pushVY * dt);
       z.pushVX *= 0.85;
       z.pushVY *= 0.85;
     }
@@ -667,10 +677,22 @@ window.Zombies = (function(){
     game.shake = Math.max(game.shake, cfg.big ? 8 : 4);
     if(cfg.big) window.SFX.sfx.bigZombieDown();
 
-    if(game.player.pinned && game.player.pinned.zombie === z) game.player.pinned = null;
-    if(game.player.ridden && game.player.ridden.zombie === z) game.player.ridden = null;
-    if(game.player.smoked && game.player.smoked.zombie === z) game.player.smoked = null;
-    if(game.player.charged && game.player.charged.zombie === z) game.player.charged = null;
+    if(game.player.pinned && game.player.pinned.zombie === z){
+      game.player.pinned = null;
+      game.player.controlBlocked = false;
+    }
+    if(game.player.ridden && game.player.ridden.zombie === z){
+      game.player.ridden = null;
+      game.player.controlBlocked = false;
+    }
+    if(game.player.smoked && game.player.smoked.zombie === z){
+      game.player.smoked = null;
+      game.player.controlBlocked = false;
+    }
+    if(game.player.charged && game.player.charged.zombie === z){
+      game.player.charged = null;
+      game.player.controlBlocked = false;
+    }
 
     if(cfg.big) dropLoot(game, z);
     if(cfg.tank){ dropLoot(game, z); dropLoot(game, z); }
@@ -757,11 +779,24 @@ window.Zombies = (function(){
   // TANK SPAWN
   // ============================================================
   function spawnTankFromEdge(game, canvasW, canvasH){
-    var p = game.player;
-    var ang = Math.random() * Math.PI * 2;
-    var dist = Math.hypot(canvasW, canvasH) * 0.6 + 100;
-    var x = p.x + Math.cos(ang) * dist;
-    var y = p.y + Math.sin(ang) * dist;
+    var spawnPoints = null;
+    if(window.World && window.World.getZombieSpawns){
+      spawnPoints = window.World.getZombieSpawns();
+    }
+
+    var x, y;
+    if(spawnPoints && spawnPoints.length > 0){
+      var sp = spawnPoints[Math.floor(Math.random() * spawnPoints.length)];
+      x = sp.x + (Math.random() - 0.5) * 40;
+      y = sp.y + (Math.random() - 0.5) * 40;
+    } else {
+      var p = game.player;
+      var ang = Math.random() * Math.PI * 2;
+      var dist = Math.hypot(canvasW, canvasH) * 0.6 + 100;
+      x = p.x + Math.cos(ang) * dist;
+      y = p.y + Math.sin(ang) * dist;
+    }
+
     var cfg = TYPES.tank;
 
     var tank = {
@@ -791,6 +826,9 @@ window.Zombies = (function(){
     return tank;
   }
 
+  // ============================================================
+  // EXPORT
+  // ============================================================
   return {
     TYPES: TYPES,
     get: get,

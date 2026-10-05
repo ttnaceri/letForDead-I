@@ -128,33 +128,97 @@ window.World = (function(){
   // ============================================================
   // YUKLASH
   // ============================================================
-  function loadActiveMap(){
+  // ============================================================
+// YUKLASH
+// ============================================================
+function loadActiveMap(){
     try {
-      var raw = localStorage.getItem('letfordead_active_map')
-             || localStorage.getItem('letfordead_map');
-      if(!raw){
-        console.warn('[World] Xarita topilmadi');
-        return false;
-      }
-      var data = JSON.parse(raw);
-      if(!data.tiles || !data.width || !data.height){
-        console.warn('[World] Xarita formati noto\'g\'ri');
-        return false;
-      }
+        var raw = localStorage.getItem('letfordead_active_map')
+               || localStorage.getItem('letfordead_map');
 
-      loadedMap = {
-        width: data.width,
-        height: data.height,
-        tiles: data.tiles.map(function(row){ return row.slice(); })
-      };
-      loadedSettings = data.settings || null;
-      console.log('[World] Loaded map:', data.width + 'x' + data.height);
-      return true;
+        // ✅ Agar xarita yo'q bo'lsa — DEFAULT xarita yaratamiz
+        if(!raw){
+            console.log('[World] Xarita yo\'q — default yaratilmoqda');
+            loadedMap = generateDefaultMap();
+            loadedSettings = null;
+            return true;
+        }
+
+        var data = JSON.parse(raw);
+        if(!data.tiles || !data.width || !data.height){
+            console.warn('[World] Xarita formati noto\'g\'ri — default');
+            loadedMap = generateDefaultMap();
+            return true;
+        }
+
+        loadedMap = {
+            width: data.width,
+            height: data.height,
+            tiles: data.tiles.map(function(row){ return row.slice(); })
+        };
+        loadedSettings = data.settings || null;
+        console.log('[World] Loaded map:', data.width + 'x' + data.height);
+        return true;
     } catch(e){
-      console.warn('[World] Load error:', e);
-      return false;
+        console.warn('[World] Load error:', e);
+        loadedMap = generateDefaultMap();
+        return true;
     }
-  }
+}
+
+// ============================================================
+// DEFAULT XARITA — 40x30 devor bilan o'ralgan xona
+// ============================================================
+function generateDefaultMap(){
+    var W = 40;
+    var H = 30;
+    var tiles = [];
+
+    for(var y = 0; y < H; y++){
+        var row = [];
+        for(var x = 0; x < W; x++){
+            // Chegara — devor (2)
+            if(x === 0 || x === W-1 || y === 0 || y === H-1){
+                row.push(2);
+            } else {
+                // Ichki — pol (1)
+                row.push(1);
+            }
+        }
+        tiles.push(row);
+    }
+
+    // Player spawn — markazda (13)
+    tiles[Math.floor(H/2)][Math.floor(W/2)] = 13;
+
+    // Bir nechta quti (devor)
+    tiles[10][10] = 2;
+    tiles[10][11] = 2;
+    tiles[11][10] = 2;
+    tiles[11][11] = 2;
+
+    tiles[20][25] = 2;
+    tiles[20][26] = 2;
+    tiles[21][25] = 2;
+    tiles[21][26] = 2;
+
+    // Radio (19)
+    tiles[5][30] = 19;
+
+    // Ammo (17)
+    tiles[25][8] = 17;
+    tiles[25][9] = 17;
+
+    // AID (18)
+    tiles[15][35] = 18;
+
+    console.log('[World] Default map created: ' + W + 'x' + H);
+    return {
+        width: W,
+        height: H,
+        tiles: tiles
+    };
+}
 
   // ============================================================
   // RENDER

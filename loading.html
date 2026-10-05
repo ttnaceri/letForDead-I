@@ -3,199 +3,138 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-
-<!-- ═══════════════ PWA ═══════════════ -->
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Let For Dead I" />
-<meta name="mobile-web-app-capable" content="yes" />
-<meta name="application-name" content="Let For Dead I" />
 <meta name="theme-color" content="#0d0b0a" />
-
-<link rel="manifest" href="manifest.json" />
-<link rel="apple-touch-icon" href="image/letfordead.png" />
-<link rel="icon" type="image/png" href="image/letfordead.png" />
-
-<title>Loading... — Let For Dead I</title>
-
+<title>Loading... — Let For Dead</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body {
+    width:100%; height:100%;
+    overflow:hidden;
+    background:#0d0b0a;
+    color:#d8d1c2;
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', 'Courier New', monospace;
+  }
 
-html, body {
-  width: 100%; height: 100%;
-  overflow: hidden;
-  background: #0d0b0a;
-  color: #d8d1c2;
-  font-family: ui-monospace, 'SF Mono', 'Cascadia Code', 'Courier New', monospace;
-  -webkit-font-smoothing: antialiased;
-  user-select: none;
-  -webkit-user-select: none;
-}
+  #loading-container {
+    position:relative;
+    width:100%; height:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    background: radial-gradient(ellipse at center, #17130f 0%, #0d0b0a 70%, #000 100%);
+  }
 
-#loading-container {
-  position: relative;
-  width: 100%; height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: radial-gradient(ellipse at center, #17130f 0%, #0d0b0a 70%, #000 100%);
-  overflow: hidden;
-}
+  #loading-container::after {
+    content:'';
+    position:absolute;
+    top:0; left:0; right:0;
+    height:4px;
+    background: linear-gradient(90deg, transparent, #a32f22, #e0523c, #a32f22, transparent);
+    animation: pulseStripe 2s ease-in-out infinite;
+  }
+  @keyframes pulseStripe {
+    0%,100% { opacity:0.5; }
+    50% { opacity:1; }
+  }
 
-#loading-container::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 20% 30%, rgba(163,47,34,0.15) 0%, transparent 25%),
-    radial-gradient(circle at 80% 70%, rgba(163,47,34,0.12) 0%, transparent 30%);
-  pointer-events: none;
-}
+  .loading-title {
+    font-family:'Staatliches', 'Arial Narrow', sans-serif;
+    font-size: clamp(48px, 10vw, 96px);
+    letter-spacing: 12px;
+    color: #d8d1c2;
+    text-shadow: 3px 0 0 #a32f22, -2px 0 0 rgba(107,143,63,0.5), 0 0 40px rgba(163,47,34,0.6);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
 
-#loading-container::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, transparent, #a32f22, #e0523c, #a32f22, transparent);
-  animation: pulseStripe 2s ease-in-out infinite;
-}
+  .loading-sub {
+    font-size: clamp(12px, 2vw, 16px);
+    letter-spacing: 6px;
+    color: #c98a2e;
+    text-transform: uppercase;
+    margin-bottom: 40px;
+  }
 
-@keyframes pulseStripe {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
-}
+  .progress-container {
+    width: 80%;
+    max-width: 500px;
+    margin-bottom: 16px;
+  }
 
-.loading-title {
-  font-family: 'Staatliches', 'Arial Narrow', sans-serif;
-  font-size: clamp(44px, 10vw, 92px);
-  letter-spacing: 12px;
-  color: #d8d1c2;
-  text-shadow:
-    3px 0 0 #a32f22,
-    -2px 0 0 rgba(107,143,63,0.5),
-    0 0 40px rgba(163,47,34,0.6);
-  margin-bottom: 8px;
-  text-transform: uppercase;
-  z-index: 2;
-  text-align: center;
-  padding: 0 20px;
-}
+  .progress-outer {
+    width:100%;
+    height:24px;
+    background: rgba(0,0,0,0.7);
+    border: 2px solid #2a2418;
+    border-radius: 4px;
+    overflow:hidden;
+  }
 
-.loading-sub {
-  font-size: clamp(11px, 2vw, 15px);
-  letter-spacing: 6px;
-  color: #c98a2e;
-  text-transform: uppercase;
-  margin-bottom: 50px;
-  z-index: 2;
-  text-align: center;
-  padding: 0 20px;
-}
+  .progress-inner {
+    height:100%;
+    width:0%;
+    background: linear-gradient(90deg, #6b8f3f, #c98a2e, #e0523c);
+    transition: width 0.15s ease;
+  }
 
-.progress-container {
-  width: 80%;
-  max-width: 500px;
-  z-index: 2;
-  margin-bottom: 20px;
-}
+  .progress-text {
+    display:flex;
+    justify-content:space-between;
+    margin-top:8px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: #837b6d;
+    text-transform: uppercase;
+  }
 
-.progress-outer {
-  width: 100%;
-  height: 24px;
-  background: rgba(0,0,0,0.7);
-  border: 2px solid #2a2418;
-  border-radius: 4px;
-  position: relative;
-  overflow: hidden;
-}
+  .progress-percent {
+    color: #c98a2e;
+    font-weight: 700;
+  }
 
-.progress-inner {
-  height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, #6b8f3f, #c98a2e, #e0523c);
-  border-radius: 2px;
-  transition: width 0.15s ease;
-  position: relative;
-  overflow: hidden;
-}
+  .loading-message {
+    margin-top: 20px;
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: #837b6d;
+    text-transform: uppercase;
+    min-height: 20px;
+  }
 
-.progress-inner::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
-  animation: shine 1.5s linear infinite;
-}
+  .status-grid {
+    margin-top: 30px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 24px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: #5a5448;
+    text-transform: uppercase;
+  }
 
-@keyframes shine {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
+  .status-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
 
-.progress-text {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 8px;
-  font-size: 11px;
-  letter-spacing: 2px;
-  color: #837b6d;
-  text-transform: uppercase;
-}
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #5a5448;
+    transition: background 0.3s ease;
+  }
 
-.progress-percent {
-  color: #c98a2e;
-  font-weight: 700;
-  font-size: 13px;
-}
-
-.loading-message {
-  margin-top: 30px;
-  font-size: 13px;
-  letter-spacing: 3px;
-  color: #837b6d;
-  text-transform: uppercase;
-  z-index: 2;
-  min-height: 20px;
-  text-align: center;
-  padding: 0 20px;
-}
-
-.dots { color: #e0523c; }
-.dots::after {
-  content: '';
-  animation: dots 1.5s steps(4, end) infinite;
-}
-
-@keyframes dots {
-  0%, 20% { content: ''; }
-  40% { content: '.'; }
-  60% { content: '..'; }
-  80%, 100% { content: '...'; }
-}
-
-.status-panel {
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
-  right: 20px;
-  display: flex;
-  justify-content: space-between;
-  font-size: 10px;
-  letter-spacing: 1.5px;
-  color: #5a5448;
-  text-transform: uppercase;
-  z-index: 2;
-}
-
-.status-right { text-align: right; }
+  .status-dot.ok { background: #7ad44a; }
+  .status-dot.error { background: #e0523c; }
 </style>
 </head>
 <body>
 
 <div id="loading-container">
-  <div class="loading-title">LET FOR DEAD I</div>
+  <div class="loading-title">LET FOR DEAD</div>
   <div class="loading-sub">Preparing the outbreak</div>
 
   <div class="progress-container">
@@ -208,18 +147,9 @@ html, body {
     </div>
   </div>
 
-  <div class="loading-message" id="loadingMessage">
-    Initializing<span class="dots"></span>
-  </div>
-
-  <div class="status-panel">
-    <div id="statusLeft">v1.0.0</div>
-    <div class="status-right" id="statusTime">00:00</div>
-  </div>
+  <div class="loading-message" id="loadingMessage">Initializing...</div>
+  <div class="status-grid" id="statusGrid"></div>
 </div>
-
-<!-- PWA -->
-<script src="pwa.js"></script>
 
 <script>
 (function(){
@@ -241,6 +171,7 @@ var MODULES = [
   'help.js',
   'plane.js',
   'missions.js',
+  'hud-config.js',
   'hud.js',
   'controller.js'
 ];
@@ -248,14 +179,12 @@ var MODULES = [
 var progressInner = document.getElementById('progressInner');
 var progressPercent = document.getElementById('progressPercent');
 var loadingMessage = document.getElementById('loadingMessage');
-var statusTime = document.getElementById('statusTime');
+var statusGrid = document.getElementById('statusGrid');
 
-var loaded = 0;
-var total = MODULES.length;
-var startTime = Date.now();
-var MIN_LOAD_TIME = 1500;
-var MAX_WAIT = 10000;
-var done = false;
+var totalSteps = MODULES.length + 2;
+var currentStep = 0;
+var loadedModules = {};
+var errors = [];
 
 function setProgress(pct){
   pct = Math.min(100, Math.max(0, pct));
@@ -264,18 +193,40 @@ function setProgress(pct){
 }
 
 function setMessage(msg){
-  if(loadingMessage) loadingMessage.innerHTML = msg + '<span class="dots"></span>';
+  if(loadingMessage) loadingMessage.textContent = msg;
 }
 
-function updateTimer(){
-  var elapsed = Math.floor((Date.now() - startTime) / 1000);
-  var m = Math.floor(elapsed / 60);
-  var s = elapsed % 60;
-  if(statusTime){
-    statusTime.textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
-  }
+function updateStep(){
+  currentStep++;
+  setProgress((currentStep / totalSteps) * 100);
 }
-setInterval(updateTimer, 200);
+
+function buildStatusGrid(){
+  if(!statusGrid) return;
+  statusGrid.innerHTML = '';
+  MODULES.forEach(function(mod){
+    var item = document.createElement('div');
+    item.className = 'status-item';
+
+    var dot = document.createElement('div');
+    dot.className = 'status-dot';
+    dot.id = 'dot_' + mod.replace('.', '_');
+
+    var label = document.createElement('span');
+    label.textContent = mod.replace('.js', '');
+
+    item.appendChild(dot);
+    item.appendChild(label);
+    statusGrid.appendChild(item);
+  });
+}
+
+function markModule(mod, ok){
+  var dot = document.getElementById('dot_' + mod.replace('.', '_'));
+  if(!dot) return;
+  dot.classList.remove('ok', 'error');
+  dot.classList.add(ok ? 'ok' : 'error');
+}
 
 function loadModule(url){
   return new Promise(function(resolve){
@@ -287,62 +238,81 @@ function loadModule(url){
     function finish(status){
       if(resolved) return;
       resolved = true;
-      loaded++;
-      var pct = (loaded / total) * 100;
-      setProgress(pct);
-      setMessage(url.replace('.js', ''));
-      if(status === 'error') console.warn('[Loading] Failed:', url);
+      loadedModules[url] = (status === 'ok');
+      markModule(url, status === 'ok');
+      updateStep();
+      if(status !== 'ok'){
+        errors.push(url);
+        console.warn('[Loading] Failed:', url);
+      }
       resolve();
     }
 
     script.onload = function(){ finish('ok'); };
     script.onerror = function(){ finish('error'); };
-    setTimeout(function(){ finish('timeout'); }, 3000);
+    setTimeout(function(){ finish('error'); }, 3000);
+
     document.head.appendChild(script);
   });
 }
 
 async function loadAll(){
   for(var i = 0; i < MODULES.length; i++){
-    setMessage('Loading ' + MODULES[i].replace('.js', ''));
+    setMessage('Loading ' + MODULES[i].replace('.js', '') + '...');
     await loadModule(MODULES[i]);
   }
+
+  setMessage('Initializing audio...');
+  try {
+    if(window.SFX && window.SFX.ensureAudio) window.SFX.ensureAudio();
+  } catch(e){}
+  updateStep();
+
+  setMessage('Loading map...');
+  try {
+    if(window.World && window.World.loadActiveMap) window.World.loadActiveMap();
+  } catch(e){}
+  updateStep();
 }
+
+var done = false;
+var startTime = Date.now();
+var MIN_TIME = 1500;
 
 function startGame(){
   if(done) return;
   done = true;
-
   var elapsed = Date.now() - startTime;
-  var wait = Math.max(0, MIN_LOAD_TIME - elapsed);
+  var wait = Math.max(0, MIN_TIME - elapsed);
 
   setTimeout(function(){
     setProgress(100);
-    setMessage('Starting');
+    setMessage('Starting...');
+    if(errors.length > 0) console.warn('[Loading] Errors:', errors);
     window.location.href = NEXT_PAGE;
   }, wait);
 }
 
 setProgress(0);
-setMessage('Initializing');
+setMessage('Initializing...');
+buildStatusGrid();
 
 loadAll().then(function(){
-  setMessage('Ready');
+  setMessage('Ready!');
   startGame();
 }).catch(function(err){
-  console.warn('[Loading] Error:', err);
+  console.warn('[Loading] Catch:', err);
   startGame();
 });
 
 setTimeout(function(){
   if(!done){
-    console.warn('[Loading] Timeout — forcing');
+    console.warn('[Loading] Timeout');
     startGame();
   }
-}, MAX_WAIT);
+}, 10000);
 
 })();
 </script>
-
 </body>
 </html>
