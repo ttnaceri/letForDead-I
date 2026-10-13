@@ -3,96 +3,74 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-
-<!-- ═══════════════ PWA ═══════════════ -->
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Let For Dead I — Map Maker" />
-<meta name="mobile-web-app-capable" content="yes" />
-<meta name="application-name" content="Let For Dead I — Map Maker" />
-<meta name="theme-color" content="#0d0b0a" />
-
-<link rel="manifest" href="../manifest.json" />
-<link rel="apple-touch-icon" href="../image/letfordead.png" />
-<link rel="icon" type="image/png" href="../image/letfordead.png" />
-
-<title>Let For Dead I — Map Maker</title>
+<title>Let For Dead — Map Maker</title>
 <link rel="stylesheet" href="mapmaker.css">
 </head>
 <body>
-
 <div id="app">
 
-  <!-- ═══════════════ SIDEBAR ═══════════════ -->
+  <!-- ============================================================
+       SIDEBAR
+       ============================================================ -->
   <aside id="sidebar">
     <div class="sidebar-header">
       <div class="sidebar-title">MAP MAKER</div>
-      <div class="sidebar-sub">Let For Dead I</div>
+      <div class="sidebar-sub">Let For Dead</div>
     </div>
 
     <div id="palette"></div>
+
+    <div class="sidebar-footer">
+      <button class="action-btn primary" id="btnPlay">▶ Play Map</button>
+      <button class="action-btn" id="btnSave">💾 Save</button>
+      <button class="action-btn" id="btnLoad">📂 Load</button>
+      <button class="action-btn" id="btnExport">⬇ Export</button>
+    </div>
   </aside>
 
-  <!-- ═══════════════ MAIN ═══════════════ -->
-  <div id="main">
+  <!-- ============================================================
+       MAIN
+       ============================================================ -->
+  <main id="main">
     <div id="toolbar">
-      <button class="tool-btn active" id="toolBrush" data-tool="brush">
-        <span class="icon">✏️</span> <span class="label">Brush</span>
+      <button class="tool-btn active" id="toolBrush" data-tool="brush" title="B">
+        <span class="icon">✏️</span> Brush
       </button>
-      <button class="tool-btn" id="toolErase" data-tool="erase">
-        <span class="icon">🧹</span> <span class="label">Erase</span>
+      <button class="tool-btn" id="toolErase" data-tool="erase" title="E">
+        <span class="icon">🧹</span> Erase
       </button>
-      <button class="tool-btn" id="toolFill" data-tool="fill">
-        <span class="icon">🪣</span> <span class="label">Fill</span>
+      <button class="tool-btn" id="toolFill" data-tool="fill" title="F">
+        <span class="icon">🪣</span> Fill
       </button>
-      <button class="tool-btn" id="toolPicker" data-tool="picker">
-        <span class="icon">💧</span> <span class="label">Picker</span>
+      <button class="tool-btn" id="toolPicker" data-tool="picker" title="I">
+        <span class="icon">💧</span> Picker
       </button>
-      <button class="tool-btn" id="toolLine" data-tool="line">
-        <span class="icon">➡️</span> <span class="label">Line</span>
+      <button class="tool-btn" id="toolLine" data-tool="line" title="L">
+        <span class="icon">➡️</span> Line
       </button>
-      <button class="tool-btn" id="toolRect" data-tool="rect">
-        <span class="icon">▭</span> <span class="label">Rect</span>
+      <button class="tool-btn" id="toolRect" data-tool="rect" title="R">
+        <span class="icon">▭</span> Rect
       </button>
 
       <div class="toolbar-sep"></div>
 
       <button class="tool-btn" id="btnUndo" title="Ctrl+Z">
-        <span class="icon">↶</span> <span class="label">Undo</span>
+        <span class="icon">↶</span> Undo
       </button>
       <button class="tool-btn" id="btnRedo" title="Ctrl+Shift+Z">
-        <span class="icon">↷</span> <span class="label">Redo</span>
+        <span class="icon">↷</span> Redo
       </button>
 
       <div class="toolbar-sep"></div>
 
       <button class="tool-btn" id="btnNew">
-        <span class="icon">📄</span> <span class="label">New</span>
+        <span class="icon">📄</span> New
       </button>
-      <button class="tool-btn" id="btnSave">
-        <span class="icon">💾</span> <span class="label">Save</span>
+      <button class="tool-btn active" id="btnGrid" title="G">
+        <span class="icon">▦</span> Grid
       </button>
-      <button class="tool-btn" id="btnLoad">
-        <span class="icon">📂</span> <span class="label">Load</span>
-      </button>
-      <button class="tool-btn" id="btnPlay">
-        <span class="icon">▶</span> <span class="label">Play</span>
-      </button>
-      <button class="tool-btn" id="btnExport">
-        <span class="icon">⬇</span> <span class="label">Export</span>
-      </button>
-
-      <div class="toolbar-sep"></div>
-
-      <button class="tool-btn active" id="btnGrid">
-        <span class="icon">▦</span> <span class="label">Grid</span>
-      </button>
-      <button class="tool-btn active" id="btnShowInvisible">
-        <span class="icon">👁</span> <span class="label">Spawns</span>
-      </button>
-
-      <button class="tool-btn" id="btnToggleSettings">
-        <span class="icon">⚙️</span> <span class="label">Settings</span>
+      <button class="tool-btn active" id="btnShowInvisible" title="H">
+        <span class="icon">👁</span> Spawns
       </button>
 
       <div class="toolbar-spacer"></div>
@@ -111,32 +89,36 @@
       <div class="item"><span class="key">Wheel</span> Zoom</div>
       <div class="item"><span class="key">Ctrl+Z</span> Undo</div>
       <div class="item"><span class="key">Del</span> Erase</div>
+      <div class="item"><span class="key">`</span> Console</div>
       <div class="item" id="statusInfo" style="margin-left:auto; color:#c98a2e;"></div>
     </div>
-  </div>
+  </main>
 
-  <!-- ═══════════════ SETTINGS PANEL ═══════════════ -->
+  <!-- ============================================================
+       SETTINGS PANEL
+       ============================================================ -->
   <aside id="settingsPanel">
     <div class="settings-header">
-      <div class="settings-title">⚙️ GAME SETTINGS</div>
+      <div class="settings-title">⚙️ SETTINGS</div>
       <button class="settings-close" id="btnCloseSettings">✕</button>
     </div>
     <div class="settings-body">
 
       <div class="setting-group">
         <div class="setting-label">📝 Map Name</div>
-        <input type="text" id="txtMapName" class="setting-input" value="Untitled Map">
+        <input type="text" id="txtMapName" class="setting-input" value="Untitled Map" placeholder="Map name">
       </div>
 
       <div class="setting-group">
         <div class="setting-label">👤 Author</div>
-        <input type="text" id="txtMapAuthor" class="setting-input" value="Anonymous">
+        <input type="text" id="txtMapAuthor" class="setting-input" value="Anonymous" placeholder="Your name">
       </div>
 
       <div class="setting-group">
         <div class="setting-label">🚁 Help Transport</div>
         <select id="selTransport" class="setting-select">
-          <option value="helicopter">🚁 Helicopter</option>
+          <option value="none">— No Transport (Next ACT) —</option>
+          <option value="helicopter" selected>🚁 Helicopter</option>
           <option value="boat">🚤 Boat</option>
           <option value="train">🚂 Train</option>
           <option value="car">🚗 Escape Car</option>
@@ -176,11 +158,12 @@
       </div>
 
       <div class="setting-group">
-        <div class="setting-label">🚁 Helicopter Speed</div>
-        <div class="setting-row">
-          <input type="range" id="sldHeliSpeed" min="1" max="20" value="8" step="1">
-          <input type="number" id="numHeliSpeed" min="1" max="20" value="8" step="1">
-        </div>
+        <div class="setting-label">🚪 Door Position</div>
+        <select id="doorPosition" class="setting-select">
+          <option value="top">1 — Beginning</option>
+          <option value="middle" selected>2 — Middle</option>
+          <option value="bottom">3 — End</option>
+        </select>
       </div>
 
       <div class="setting-group">
@@ -191,7 +174,6 @@
           <option value="shotgun">Shotgun</option>
           <option value="rifle">M16 Rifle</option>
           <option value="ak47">AK-47</option>
-          <option value="smg">SMG</option>
           <option value="sniper">Hunting Rifle</option>
         </select>
       </div>
@@ -205,17 +187,13 @@
         </select>
       </div>
 
-      <div class="setting-group">
-        <button class="action-btn" id="btnCallPlane">
-          ✈️ Test: Call Attack Plane
-        </button>
-      </div>
-
     </div>
   </aside>
 </div>
 
-<!-- ═══════════════ NEW MAP MODAL ═══════════════ -->
+<!-- ============================================================
+     NEW MAP MODAL
+     ============================================================ -->
 <div class="modal-bg" id="newMapModal">
   <div class="modal">
     <div class="modal-title">New Map</div>
@@ -230,7 +208,7 @@
   </div>
 </div>
 
-<!-- ═══════════════ LOAD MODAL ═══════════════ -->
+<!-- LOAD MODAL -->
 <div class="modal-bg" id="loadMapModal">
   <div class="modal">
     <div class="modal-title">Load Map</div>
@@ -243,12 +221,83 @@
   </div>
 </div>
 
+<!-- SIRENED CAR MODAL -->
+<div class="modal-bg" id="sirenedCarModal">
+  <div class="modal">
+    <div class="modal-title">🚨 Sirened Car Settings</div>
+
+    <label>Car Size (ratio 2:1, 4:2, 8:4, 16:8)</label>
+    <select id="sirenedCarSize" class="modal-select">
+      <option value="2">2×1</option>
+      <option value="4" selected>4×2</option>
+      <option value="8">8×4</option>
+      <option value="16">16×8</option>
+    </select>
+
+    <label>Upload alarm sound (mp3/wav)</label>
+    <input type="file" id="sirenedCarSound" accept="audio/*">
+    <div id="sirenedCarSoundInfo" class="upload-info">Default: sounds/horde.mp3</div>
+
+    <div class="modal-actions">
+      <button class="modal-btn secondary" data-modal-close>Cancel</button>
+      <button class="modal-btn primary" id="sirenedCarConfirm">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- MESSAGE PAPER MODAL -->
+<div class="modal-bg" id="messagePaperModal">
+  <div class="modal">
+    <div class="modal-title">📜 Message Paper</div>
+    <label>Title</label>
+    <input type="text" id="msgTitle" value="Note" class="setting-input" style="margin-bottom:12px;">
+    <label>Text</label>
+    <textarea id="msgText" placeholder="Write your message..."></textarea>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" data-modal-close>Cancel</button>
+      <button class="modal-btn primary" id="msgConfirm">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- AD/EVENT MODAL -->
+<div class="modal-bg" id="adEventModal">
+  <div class="modal">
+    <div class="modal-title">📺 Ad / Event Screen</div>
+    <label>Upload Image or Video</label>
+    <input type="file" id="adEventFile" accept="image/*,video/*">
+    <div id="adEventInfo" class="upload-info">No file uploaded</div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" data-modal-close>Cancel</button>
+      <button class="modal-btn primary" id="adEventConfirm">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCRIPTING CONSOLE
+     ============================================================ -->
+<div id="scriptConsole">
+  <div class="console-header" id="consoleDragHeader">
+    <div class="console-title">💻 SCRIPTING CONSOLE</div>
+    <div class="console-controls">
+      <button id="consoleMinimize">−</button>
+      <button id="consoleClose">✕</button>
+    </div>
+  </div>
+  <div class="console-body" id="consoleBody">
+    <div class="console-output" id="consoleOutput"></div>
+    <div class="console-input-row">
+      <span class="console-prompt">&gt;</span>
+      <input type="text" id="consoleInput" class="console-input" placeholder="Type command... (help, clear, save, load, ...)" autocomplete="off">
+    </div>
+  </div>
+  <div class="console-resize" id="consoleResize"></div>
+</div>
+
 <div id="toast"></div>
 
-<!-- ═══════════════ SCRIPTS ═══════════════ -->
-<script src="../pwa.js"></script>
 <script src="mapmaker-map.js"></script>
 <script src="mapmaker.js"></script>
-
 </body>
 </html>

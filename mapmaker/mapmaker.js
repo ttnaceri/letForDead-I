@@ -5,6 +5,9 @@
 (function(){
 'use strict';
 
+// ============================================================
+// CONSTANTS
+// ============================================================
 var CELL_SIZE = 32;
 var DEFAULT_W = 80;
 var DEFAULT_H = 70;
@@ -22,9 +25,22 @@ var state = {
   data: [],
   settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS)),
 
+  // Extras
+  sirenedCars: [],
+  messagePapers: {},
+  adEvents: [],
+  teleportPairs: {},
+  doors: [],
+  shelfItems: {},
+
+  // Selection
   tool: 'brush',
   selectedTile: 2,
+  selectedModule: null,
+  selectedDoor: null,
+  doorPosition: 'middle',
 
+  // Camera
   camera: { x: 0, y: 0 },
   zoom: 1.0,
   minZoom: 0.25,
@@ -32,21 +48,34 @@ var state = {
   gridVisible: true,
   showInvisible: true,
 
+  // Painting
   isPainting: false,
   paintTile: 2,
   lineStart: null,
   rectStart: null,
 
+  // Pan
   panning: false,
   panButton: 0,
   panStart: { x: 0, y: 0 },
   panCam: { x: 0, y: 0 },
 
+  // Hover
   hoverCell: { x: -1, y: -1 },
 
+  // History
   history: [],
   historyIndex: -1,
-  maxHistory: 100
+  maxHistory: 100,
+
+  // Images
+  sirenCarImages: { off: null, on: null },
+
+  // Pending
+  pendingAdData: null,
+  pendingAdType: null,
+  pendingAdX: undefined,
+  pendingAdY: undefined
 };
 
 // ============================================================
@@ -86,6 +115,12 @@ function createMap(w, h){
     for(var x = 0; x < w; x++) row.push(0);
     state.data.push(row);
   }
+  state.sirenedCars = [];
+  state.messagePapers = {};
+  state.adEvents = [];
+  state.teleportPairs = {};
+  state.doors = [];
+  state.shelfItems = {};
   state.history = [];
   state.historyIndex = -1;
   saveHistory();
@@ -102,7 +137,13 @@ function saveHistory(){
     w: state.mapW,
     h: state.mapH,
     data: state.data.map(function(row){ return row.slice(); }),
-    settings: JSON.parse(JSON.stringify(state.settings))
+    settings: JSON.parse(JSON.stringify(state.settings)),
+    sirenedCars: JSON.parse(JSON.stringify(state.sirenedCars)),
+    messagePapers: JSON.parse(JSON.stringify(state.messagePapers)),
+    adEvents: JSON.parse(JSON.stringify(state.adEvents)),
+    teleportPairs: JSON.parse(JSON.stringify(state.teleportPairs)),
+    doors: JSON.parse(JSON.stringify(state.doors)),
+    shelfItems: JSON.parse(JSON.stringify(state.shelfItems))
   };
   state.history.push(snapshot);
   if(state.history.length > state.maxHistory) state.history.shift();
@@ -131,6 +172,12 @@ function restoreHistory(){
   state.mapH = snap.h;
   state.data = snap.data.map(function(row){ return row.slice(); });
   if(snap.settings) state.settings = JSON.parse(JSON.stringify(snap.settings));
+  state.sirenedCars = snap.sirenedCars || [];
+  state.messagePapers = snap.messagePapers || {};
+  state.adEvents = snap.adEvents || [];
+  state.teleportPairs = snap.teleportPairs || {};
+  state.doors = snap.doors || [];
+  state.shelfItems = snap.shelfItems || {};
   resizeCanvas();
   render();
   updateUndoRedoButtons();
@@ -187,6 +234,7 @@ function render(){
   var endX = Math.min(state.mapW, Math.ceil((state.camera.x + w) / cs));
   var endY = Math.min(state.mapH, Math.ceil((state.camera.y + h) / cs));
 
+  // Tiles
   for(var y = startY; y < endY; y++){
     for(var x = startX; x < endX; x++){
       var tileId = state.data[y][x];
@@ -195,16 +243,12 @@ function render(){
       var sx = x * cs - state.camera.x;
       var sy = y * cs - state.camera.y;
 
-      // Invisible tiles — faqat mapmakerda chiziladi
       if(tile.invisible){
         if(!state.showInvisible) continue;
-        // Yashirin — chizilgan holda "зрение" bilan
         ctx.fillStyle = tile.color;
         ctx.globalAlpha = 0.35;
         ctx.fillRect(sx, sy, cs, cs);
         ctx.globalAlpha = 1;
-
-        // Ramka
         ctx.strokeStyle = tile.color;
         ctx.lineWidth = 2;
         ctx.setLineDash([4, 3]);
@@ -221,10 +265,56 @@ function render(){
     }
   }
 
+  // Sirened cars
+  for(var i = 0; i < state.sirenedCars.length; i++){
+    drawSirenedCar(ctx, state.sirenedCars[i], cs);
+  }
+
+  // Doors
+  for(var j = 0; j < state.doors.length; j++){
+    drawDoorObject(ctx, state.doors[j], cs);
+  }
+
+  // Teleports
+  for(var pid in state.teleportPairs){
+    var pair = state.teleportPairs[pid];
+    if(pair[0]) drawTeleport(ctx, pair[0], cs, pid, false);
+    if(pair[1]) drawTeleport(ctx, pair[1], cs, pid, true);
+  }
+
+  // Message papers
+  for(var key in state.messagePapers){
+    var parts = key.split(',');
+    var px = parseInt(parts[0], 10) * cs - state.camera.x;
+    var py = parseInt(parts[1], 10) * cs - state.camera.y;
+    drawMessagePaper(ctx, px, py, cs);
+  }
+
+  // Ad events
+  for(var k = 0; k < state.adEvents.length; k++){
+    drawAdEvent(ctx, state.adEvents[k], cs);
+  }
+
   // Map border
   ctx.strokeStyle = '#a32f22';
   ctx.lineWidth = 2;
   ctx.strokeRect(-state.camera.x, -state.camera.y, state.mapW * cs, state.mapH * cs);
+
+  // Line preview
+  if(state.lineStart && state.hoverCell.x >= 0){
+    var lx = state.lineStart.x * cs - state.camera.x;
+    var ly = state.lineStart.y * cs - state.camera.y;
+    var ex = state.hoverCell.x * cs - state.camera.x;
+    var ey = state.hoverCell.y * cs - state.camera.y;
+    ctx.strokeStyle = 'rgba(224,82,60,0.8)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 6]);
+    ctx.beginPath();
+    ctx.moveTo(lx + cs/2, ly + cs/2);
+    ctx.lineTo(ex + cs/2, ey + cs/2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
 
   // Hover
   if(state.hoverCell.x >= 0 && state.hoverCell.x < state.mapW &&
@@ -247,16 +337,30 @@ function drawTileIcon(c, tileId, sx, sy, cs){
   var t = TILES[tileId];
   if(!t) return;
 
-  // Icon font (kichik)
-  if(t.icon){
-    c.font = 'bold ' + (cs * 0.5) + 'px monospace';
+  if(t.playerSpawn){
     c.fillStyle = '#fff';
+    c.font = 'bold ' + (cs * 0.4) + 'px monospace';
     c.textAlign = 'center';
     c.textBaseline = 'middle';
-    c.fillText(t.icon, cx, cy + 1);
+    c.fillText('P' + (t.playerIndex + 1), cx, cy + 1);
   }
 
-  // Keyed — E harfi
+  if(t.zombieSpawn && !t.tankSpawn){
+    c.fillStyle = '#fff';
+    c.font = 'bold ' + (cs * 0.4) + 'px monospace';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.fillText('Z', cx, cy + 1);
+  }
+
+  if(t.tankSpawn){
+    c.fillStyle = '#fff';
+    c.font = 'bold ' + (cs * 0.35) + 'px monospace';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.fillText('T', cx, cy + 1);
+  }
+
   if(t.keyed){
     c.fillStyle = '#c98a2e';
     c.beginPath();
@@ -269,7 +373,6 @@ function drawTileIcon(c, tileId, sx, sy, cs){
     c.fillText('E', cx, cy + 1);
   }
 
-  // Trigger — qizil
   if(t.trigger){
     c.fillStyle = '#e0523c';
     c.beginPath();
@@ -277,54 +380,199 @@ function drawTileIcon(c, tileId, sx, sy, cs){
     c.fill();
   }
 
-  // Player spawn — P1, P2, P3, P4
-  if(t.playerSpawn){
-    c.fillStyle = '#fff';
-    c.font = 'bold ' + (cs * 0.4) + 'px monospace';
-    c.textAlign = 'center';
-    c.textBaseline = 'middle';
-    c.fillText('P' + (t.playerIndex + 1), cx, cy + 1);
-  }
-
-  // Zombie spawn
-  if(t.zombieSpawn && !t.tankSpawn){
-    c.fillStyle = '#fff';
-    c.font = 'bold ' + (cs * 0.4) + 'px monospace';
-    c.textAlign = 'center';
-    c.textBaseline = 'middle';
-    c.fillText('Z', cx, cy + 1);
-  }
-
-  // Tank spawn
-  if(t.tankSpawn){
-    c.fillStyle = '#fff';
-    c.font = 'bold ' + (cs * 0.35) + 'px monospace';
-    c.textAlign = 'center';
-    c.textBaseline = 'middle';
-    c.fillText('T', cx, cy + 1);
-  }
-
-  // Transport
   if(t.transport){
-    var tt = TRANSPORT_TYPES[t.transportType || 'helicopter'];
     c.font = 'bold ' + (cs * 0.5) + 'px monospace';
     c.fillStyle = '#fff';
     c.textAlign = 'center';
     c.textBaseline = 'middle';
-    c.fillText(tt ? tt.icon : '🚁', cx, cy + 1);
+    c.fillText('🚁', cx, cy + 1);
   }
 
-  // Sirened car — blinking
-  if(tileId === 26){
-    var time = performance.now() / 200;
-    var blink = Math.sin(time) > 0;
-    c.fillStyle = '#3a3a3a';
-    c.fillRect(sx + cs*0.1, sy + cs*0.3, cs*0.8, cs*0.5);
-    c.fillStyle = blink ? '#ffe14a' : '#6a5a1a';
-    c.fillRect(sx + cs*0.2, sy + cs*0.15, cs*0.2, cs*0.15);
-    c.fillStyle = blink ? '#6a5a1a' : '#ffe14a';
-    c.fillRect(sx + cs*0.6, sy + cs*0.15, cs*0.2, cs*0.15);
+  if(t.nextAct){
+    c.fillStyle = '#fff';
+    c.font = 'bold ' + (cs * 0.35) + 'px monospace';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.fillText('ACT+', cx, cy + 1);
   }
+
+  if(t.door){
+    var doorH = cs * 0.6;
+    var doorW = cs * 0.7;
+    var dx = sx + (cs - doorW) / 2;
+    var dy = sy + (cs - doorH) / 2;
+    c.fillStyle = t.color;
+    c.fillRect(dx, dy, doorW, doorH);
+    c.strokeStyle = t.doorType === 'safe' ? '#c98a2e' : '#2a2418';
+    c.lineWidth = 2;
+    c.strokeRect(dx, dy, doorW, doorH);
+  }
+
+  if(t.pickupType){
+    c.font = 'bold ' + (cs * 0.5) + 'px monospace';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    if(t.pickupType === 'ammo') c.fillText('AM', cx, cy + 1);
+    else if(t.pickupType === 'aid') c.fillText('+', cx, cy + 1);
+    else if(t.pickupType === 'patron') c.fillText('∞', cx, cy + 1);
+    else if(t.pickupType === 'laser') c.fillText('L', cx, cy + 1);
+    else if(t.pickupType === 'grenade') c.fillText('G', cx, cy + 1);
+  }
+}
+
+function drawSirenedCar(c, car, cs){
+  var sx = car.x * cs - state.camera.x;
+  var sy = car.y * cs - state.camera.y;
+  var w = cs * (car.size || 4);
+  var h = cs * ((car.size || 4) / 2);
+
+  var time = performance.now();
+  var blink = Math.floor(time / 1000) % 2 === 0;
+  var img = blink ? state.sirenCarImages.off : state.sirenCarImages.on;
+
+  if(img && img.complete && img.naturalWidth > 0){
+    c.drawImage(img, sx, sy, w, h);
+  } else {
+    c.fillStyle = blink ? '#c98a2e' : '#f0d98a';
+    c.fillRect(sx, sy, w, h);
+    c.fillStyle = '#1a1a1a';
+    c.font = 'bold ' + (cs * 0.4) + 'px monospace';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.fillText('🚨', sx + w/2, sy + h/2);
+  }
+
+  c.strokeStyle = '#a32f22';
+  c.lineWidth = 2;
+  c.strokeRect(sx, sy, w, h);
+}
+
+function drawDoorObject(c, door, cs){
+  var sx = door.x * cs - state.camera.x;
+  var sy = door.y * cs - state.camera.y;
+
+  var cfg = { easy: '#a09a8a', hard: '#8a5a2a', safe: '#3a3a4a' };
+  var color = cfg[door.type] || '#8a5a2a';
+
+  var doorH = cs * 0.6;
+  var doorW = cs * 0.7;
+  var dx = sx + (cs - doorW) / 2;
+  var dy = sy + (cs - doorH) / 2;
+
+  if(door.position === 'top'){
+    dy = sy + 2;
+    doorH = cs * 0.25;
+  } else if(door.position === 'bottom'){
+    dy = sy + cs - doorH - 2;
+    doorH = cs * 0.25;
+  }
+
+  c.fillStyle = color;
+  c.fillRect(dx, dy, doorW, doorH);
+
+  c.strokeStyle = door.type === 'safe' ? '#c98a2e' : '#2a2418';
+  c.lineWidth = 2;
+  c.strokeRect(dx, dy, doorW, doorH);
+
+  if(door.type === 'safe'){
+    c.save();
+    c.shadowColor = '#c98a2e';
+    c.shadowBlur = 12;
+    c.strokeRect(dx, dy, doorW, doorH);
+    c.restore();
+  }
+
+  c.fillStyle = '#fff';
+  c.font = 'bold ' + (cs * 0.25) + 'px monospace';
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  var label = door.type === 'easy' ? 'EASY' :
+              door.type === 'hard' ? 'HARD' : 'SAFE';
+  c.fillText(label, sx + cs/2, sy + cs/2);
+}
+
+function drawTeleport(c, tp, cs, pairId, isSecond){
+  var sx = tp.x * cs - state.camera.x;
+  var sy = tp.y * cs - state.camera.y;
+  var color = isSecond ? '#8ae45a' : '#4a8ed4';
+
+  c.save();
+  c.globalAlpha = 0.4 + Math.sin(performance.now() / 300) * 0.2;
+  c.fillStyle = color;
+  c.beginPath();
+  c.arc(sx + cs/2, sy + cs/2, cs * 0.4, 0, Math.PI * 2);
+  c.fill();
+  c.restore();
+
+  c.strokeStyle = color;
+  c.lineWidth = 2;
+  c.beginPath();
+  c.arc(sx + cs/2, sy + cs/2, cs * 0.4, 0, Math.PI * 2);
+  c.stroke();
+
+  c.fillStyle = '#fff';
+  c.font = 'bold ' + (cs * 0.4) + 'px monospace';
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  c.fillText(pairId, sx + cs/2, sy + cs/2 + 1);
+}
+
+function drawMessagePaper(c, sx, sy, cs){
+  c.fillStyle = '#e0d8c0';
+  c.fillRect(sx + 4, sy + 4, cs - 8, cs - 8);
+
+  c.strokeStyle = '#8a7a6a';
+  c.lineWidth = 1;
+  for(var i = 0; i < 3; i++){
+    var y = sy + 10 + i * 5;
+    c.beginPath();
+    c.moveTo(sx + 8, y);
+    c.lineTo(sx + cs - 8, y);
+    c.stroke();
+  }
+}
+
+function drawAdEvent(c, ad, cs){
+  var sx = ad.x * cs - state.camera.x;
+  var sy = ad.y * cs - state.camera.y;
+  var w = (ad.w || 6) * cs;
+  var h = (ad.h || 4) * cs;
+
+  if(ad.data && ad.type === 'image'){
+    var img = new Image();
+    img.src = ad.data;
+    if(img.complete && img.naturalWidth > 0){
+      c.drawImage(img, sx, sy, w, h);
+    } else {
+      c.fillStyle = '#1a1a1a';
+      c.fillRect(sx, sy, w, h);
+      c.fillStyle = '#c98a2e';
+      c.font = 'bold ' + (cs * 0.5) + 'px monospace';
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillText('IMG', sx + w/2, sy + h/2);
+    }
+  } else if(ad.data && ad.type === 'video'){
+    c.fillStyle = '#1a1a1a';
+    c.fillRect(sx, sy, w, h);
+    c.fillStyle = '#e0523c';
+    c.font = 'bold ' + (cs * 0.5) + 'px monospace';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.fillText('▶ VIDEO', sx + w/2, sy + h/2);
+  } else {
+    c.fillStyle = '#c98a2e';
+    c.fillRect(sx, sy, w, h);
+    c.fillStyle = '#1a1a1a';
+    c.font = 'bold ' + (cs * 0.5) + 'px monospace';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.fillText('AD', sx + w/2, sy + h/2);
+  }
+
+  c.strokeStyle = '#c98a2e';
+  c.lineWidth = 2;
+  c.strokeRect(sx, sy, w, h);
 }
 
 function renderGrid(cs){
@@ -359,69 +607,30 @@ function renderGrid(cs){
 }
 
 // ============================================================
-// PALETTE — kategoriyalar bilan
+// PALETTE
 // ============================================================
 function buildPalette(){
   palette.innerHTML = '';
 
   var sections = [
-    {
-      title: 'Terrain',
-      icon: '🟫',
-      ids: [0, 1, 5, 7, 11, 12, 4, 23, 3, 6]
-    },
-    {
-      title: 'Walls',
-      icon: '🧱',
-      ids: [2, 8, 9, 10, 21, 22, 31, 32]
-    },
-    {
-      title: 'Player Spawns',
-      icon: '👤',
-      ids: [13, 14, 15, 33]
-    },
-    {
-      title: 'Zombie Spawns',
-      icon: '🧟',
-      ids: [16, 34, 35, 36]
-    },
-    {
-      title: 'Pickups',
-      icon: '🎁',
-      ids: [17, 18, 30, 37, 38]
-    },
-    {
-      title: 'Keyed (E)',
-      icon: '🔑',
-      ids: [19, 24, 28, 40, 41, 42, 43, 39]
-    },
-    {
-      title: 'Triggers',
-      icon: '💥',
-      ids: [26, 44, 45, 27]
-    },
-    {
-      title: 'Transport',
-      icon: '🚁',
-      ids: [20, 46, 47, 48]
-    },
-    {
-      title: 'Objectives',
-      icon: '🎯',
-      ids: [25]
-    },
-    {
-      title: 'Decor',
-      icon: '🌳',
-      ids: [49, 50, 51]
-    }
+    { title: 'Terrain',     ids: [0, 1, 5, 7, 11, 12, 4, 23, 3, 6] },
+    { title: 'Walls',       ids: [2, 8, 9, 10, 21, 22, 31, 32] },
+    { title: 'Doors',       ids: [60, 61, 62] },
+    { title: 'Player Spawns', ids: [13, 14, 15, 33] },
+    { title: 'Zombie Spawns', ids: [16, 34, 35, 36] },
+    { title: 'Pickups',     ids: [17, 18, 30, 37, 38] },
+    { title: 'Keyed',       ids: [19, 40, 41, 42, 43, 39] },
+    { title: 'Triggers',    ids: [26, 44, 45, 27] },
+    { title: 'Transport',   ids: [20, 46, 47, 48] },
+    { title: 'Objectives',  ids: [25, 70] },
+    { title: 'Modules',     ids: [80, 81, 82, 83, 84, 85] },
+    { title: 'Decor',       ids: [49, 50, 51] }
   ];
 
   sections.forEach(function(sec){
     var h = document.createElement('div');
     h.className = 'palette-section';
-    h.innerHTML = '<span>' + sec.icon + ' ' + sec.title + '</span>' +
-                  '<span class="badge">' + sec.ids.length + '</span>';
+    h.innerHTML = '<span>' + sec.title + '</span><span class="badge">' + sec.ids.length + '</span>';
     palette.appendChild(h);
 
     sec.ids.forEach(function(id){
@@ -448,6 +657,7 @@ function buildPalette(){
 
       btn.appendChild(prev);
       btn.appendChild(label);
+
       btn.addEventListener('click', function(){ selectTile(id); });
       palette.appendChild(btn);
     });
@@ -456,18 +666,33 @@ function buildPalette(){
 
 function selectTile(id){
   state.selectedTile = id;
+  state.selectedModule = null;
+  state.selectedDoor = null;
+
   var btns = palette.querySelectorAll('.tile-btn');
   for(var i = 0; i < btns.length; i++){
     btns[i].classList.toggle('active', parseInt(btns[i].getAttribute('data-tile'), 10) === id);
   }
+
   var tile = TILES[id];
   if(statusInfo && tile){
     var info = 'Selected: ' + tile.name;
     if(tile.solid) info += ' [SOLID]';
     if(tile.keyed) info += ' [E]';
     if(tile.trigger) info += ' [TRIGGER]';
-    if(tile.invisible) info += ' [INVISIBLE]';
     statusInfo.textContent = info;
+  }
+
+  if(id === 26){
+    document.getElementById('sirenedCarModal').classList.add('show');
+  } else if(id === 82){
+    document.getElementById('messagePaperModal').classList.add('show');
+    setTimeout(function(){
+      var el = document.getElementById('msgTitle');
+      if(el) el.focus();
+    }, 100);
+  } else if(id === 83){
+    document.getElementById('adEventModal').classList.add('show');
   }
 }
 
@@ -525,6 +750,125 @@ function floodFill(x, y, newTile){
     stack.push([cx - 1, cy]);
     stack.push([cx, cy + 1]);
     stack.push([cx, cy - 1]);
+  }
+}
+
+// ============================================================
+// DELETE OBJECT AT HOVER
+// ============================================================
+function deleteObjectAtHover(){
+  var hx = state.hoverCell.x;
+  var hy = state.hoverCell.y;
+
+  if(hx < 0 || hx >= state.mapW || hy < 0 || hy >= state.mapH){
+    showToast('Nothing to delete');
+    return;
+  }
+
+  var deleted = false;
+  var msg = '';
+
+  // 1. Sirened car
+  for(var i = state.sirenedCars.length - 1; i >= 0; i--){
+    var car = state.sirenedCars[i];
+    var carW = car.size || 4;
+    var carH = carW / 2;
+    if(hx >= car.x && hx < car.x + carW &&
+       hy >= car.y && hy < car.y + carH){
+      saveHistory();
+      state.sirenedCars.splice(i, 1);
+      deleted = true;
+      msg = 'Sirened car deleted';
+      break;
+    }
+  }
+
+  // 2. Door
+  if(!deleted){
+    for(var j = state.doors.length - 1; j >= 0; j--){
+      var door = state.doors[j];
+      if(door.x === hx && door.y === hy){
+        saveHistory();
+        state.doors.splice(j, 1);
+        deleted = true;
+        msg = 'Door deleted';
+        break;
+      }
+    }
+  }
+
+  // 3. Teleport
+  if(!deleted){
+    for(var pid in state.teleportPairs){
+      var pair = state.teleportPairs[pid];
+      for(var k = 0; k < pair.length; k++){
+        if(pair[k].x === hx && pair[k].y === hy){
+          saveHistory();
+          pair.splice(k, 1);
+          if(pair.length === 0) delete state.teleportPairs[pid];
+          deleted = true;
+          msg = 'Teleport deleted';
+          break;
+        }
+      }
+      if(deleted) break;
+    }
+  }
+
+  // 4. Message paper
+  if(!deleted){
+    var paperKey = hx + ',' + hy;
+    if(state.messagePapers[paperKey]){
+      saveHistory();
+      delete state.messagePapers[paperKey];
+      deleted = true;
+      msg = 'Message paper deleted';
+    }
+  }
+
+  // 5. Ad/Event
+  if(!deleted){
+    for(var m = state.adEvents.length - 1; m >= 0; m--){
+      var ad = state.adEvents[m];
+      var adW = ad.w || 6;
+      var adH = ad.h || 4;
+      if(hx >= ad.x && hx < ad.x + adW &&
+         hy >= ad.y && hy < ad.y + adH){
+        saveHistory();
+        state.adEvents.splice(m, 1);
+        deleted = true;
+        msg = 'Ad/Event deleted';
+        break;
+      }
+    }
+  }
+
+  // 6. Shelf
+  if(!deleted){
+    var shelfKey = hx + ',' + hy;
+    if(state.shelfItems[shelfKey]){
+      saveHistory();
+      delete state.shelfItems[shelfKey];
+      deleted = true;
+      msg = 'Shelf deleted';
+    }
+  }
+
+  // 7. Tile
+  if(!deleted){
+    if(state.data[hy][hx] !== 0){
+      saveHistory();
+      state.data[hy][hx] = 0;
+      deleted = true;
+      msg = 'Tile cleared';
+    }
+  }
+
+  if(deleted){
+    render();
+    showToast(msg);
+  } else {
+    showToast('Nothing to delete here');
   }
 }
 
@@ -592,6 +936,66 @@ canvas.addEventListener('mousedown', function(e){
         state.rectStart = null;
         render();
       }
+      return;
+    }
+
+    if(state.selectedTile === 26){
+      var size = parseInt(document.getElementById('sirenedCarSize').value, 10) || 4;
+      saveHistory();
+      state.sirenedCars.push({
+        x: cx, y: cy,
+        size: size,
+        sound: state.sirenedCarSound || null,
+        imageOff: 'modules/alarmcar.png',
+        imageOn: 'modules/alarmedcar.png'
+      });
+      render();
+      return;
+    }
+
+    if(state.selectedTile === 60 || state.selectedTile === 61 || state.selectedTile === 62){
+      var doorType = state.selectedTile === 60 ? 'easy' :
+                     state.selectedTile === 61 ? 'hard' : 'safe';
+      saveHistory();
+      state.doors.push({
+        x: cx, y: cy,
+        type: doorType,
+        position: state.doorPosition
+      });
+      render();
+      return;
+    }
+
+    if(state.selectedTile === 80 || state.selectedTile === 81){
+      saveHistory();
+      var pid = 1;
+      while(state.teleportPairs[pid] && state.teleportPairs[pid].length >= 2) pid++;
+      if(!state.teleportPairs[pid]) state.teleportPairs[pid] = [];
+      if(state.teleportPairs[pid].length < 2){
+        state.teleportPairs[pid].push({ x: cx, y: cy });
+      }
+      render();
+      return;
+    }
+
+    if(state.selectedTile === 82){
+      saveHistory();
+      var key = cx + ',' + cy;
+      if(!state.messagePapers[key]){
+        state.messagePapers[key] = {
+          title: 'Note',
+          text: 'Click E to read'
+        };
+      }
+      document.getElementById('messagePaperModal').classList.add('show');
+      render();
+      return;
+    }
+
+    if(state.selectedTile === 83){
+      document.getElementById('adEventModal').classList.add('show');
+      state.pendingAdX = cx;
+      state.pendingAdY = cy;
       return;
     }
 
@@ -688,25 +1092,19 @@ canvas.addEventListener('wheel', function(e){
 }, { passive: false });
 
 // ============================================================
-// KEYBOARD
+// KEYBOARD — INPUT FOKUS TEKSHIRUVI BILAN
 // ============================================================
 window.addEventListener('keydown', function(e){
   var k = e.key ? e.key.toLowerCase() : '';
 
-  if(e.ctrlKey && k === 'z' && !e.shiftKey){ e.preventDefault(); undo(); return; }
-  if((e.ctrlKey && e.shiftKey && k === 'z') || (e.ctrlKey && k === 'y')){ e.preventDefault(); redo(); return; }
-  if(e.ctrlKey && k === 's'){ e.preventDefault(); saveMapFile(); return; }
-  if(e.ctrlKey && k === 'o'){ e.preventDefault(); openLoadModal(); return; }
-  if(e.ctrlKey && k === 'n'){ e.preventDefault(); openNewModal(); return; }
-
-  if((k === 'delete' || k === 'backspace') && state.hoverCell.x >= 0){
+  // Console toggle — har doim ishlaydi
+  if(k === '`' || k === '~'){
     e.preventDefault();
-    saveHistory();
-    paintCell(state.hoverCell.x, state.hoverCell.y, 0);
-    render();
+    toggleConsole();
     return;
   }
 
+  // Escape — modal yopish
   if(k === 'escape'){
     state.lineStart = null;
     state.rectStart = null;
@@ -715,8 +1113,42 @@ window.addEventListener('keydown', function(e){
     return;
   }
 
-  if(k === 'g' && !e.ctrlKey){ state.gridVisible = !state.gridVisible; render(); return; }
-  if(k === 'h' && !e.ctrlKey){ state.showInvisible = !state.showInvisible; render(); return; }
+  // INPUT FOKUSDA — hech narsa qilmaymiz
+  var activeEl = document.activeElement;
+  var isInputFocused = activeEl && (
+    activeEl.tagName === 'INPUT' ||
+    activeEl.tagName === 'TEXTAREA' ||
+    activeEl.tagName === 'SELECT' ||
+    activeEl.isContentEditable
+  );
+
+  if(isInputFocused) return;
+
+  // Ctrl shortcuts
+  if(e.ctrlKey && k === 'z' && !e.shiftKey){ e.preventDefault(); undo(); return; }
+  if((e.ctrlKey && e.shiftKey && k === 'z') || (e.ctrlKey && k === 'y')){ e.preventDefault(); redo(); return; }
+  if(e.ctrlKey && k === 's'){ e.preventDefault(); saveMapFile(); return; }
+  if(e.ctrlKey && k === 'o'){ e.preventDefault(); openLoadModal(); return; }
+  if(e.ctrlKey && k === 'n'){ e.preventDefault(); openNewModal(); return; }
+
+  // DELETE / BACKSPACE — object o'chirish
+  if(k === 'delete' || k === 'backspace'){
+    e.preventDefault();
+    deleteObjectAtHover();
+    return;
+  }
+
+  if(k === 'g' && !e.ctrlKey){
+    state.gridVisible = !state.gridVisible;
+    render();
+    return;
+  }
+
+  if(k === 'h' && !e.ctrlKey){
+    state.showInvisible = !state.showInvisible;
+    render();
+    return;
+  }
 
   if(k === 'b' && !e.ctrlKey) setTool('brush');
   if(k === 'e' && !e.ctrlKey) setTool('erase');
@@ -764,7 +1196,7 @@ document.getElementById('btnShowInvisible').addEventListener('click', function()
 });
 
 // ============================================================
-// SETTINGS INPUTS
+// SETTINGS
 // ============================================================
 function bindSetting(sliderId, numberId, key){
   var slider = document.getElementById(sliderId);
@@ -812,7 +1244,17 @@ if(selTransport){
   selTransport.value = state.settings.transportType || 'helicopter';
   selTransport.addEventListener('change', function(){
     state.settings.transportType = selTransport.value;
+    state.settings.hasHelpTransport = (selTransport.value !== 'none');
     showToast('Transport: ' + TRANSPORT_TYPES[selTransport.value].name);
+  });
+}
+
+var doorPosSelect = document.getElementById('doorPosition');
+if(doorPosSelect){
+  doorPosSelect.value = state.doorPosition;
+  doorPosSelect.addEventListener('change', function(){
+    state.doorPosition = doorPosSelect.value;
+    showToast('Door position: ' + state.doorPosition);
   });
 }
 
@@ -832,45 +1274,109 @@ if(selDiff){
   });
 }
 
-var btnCallPlane = document.getElementById('btnCallPlane');
-if(btnCallPlane){
-  btnCallPlane.addEventListener('click', function(){
-    showToast('✈️ Attack plane test in game');
-  });
+// ============================================================
+// IMAGES
+// ============================================================
+function loadSirenedCarImages(){
+  var offImg = new Image();
+  offImg.src = 'modules/alarmcar.png';
+  offImg.onload = function(){
+    state.sirenCarImages.off = offImg;
+    render();
+  };
+
+  var onImg = new Image();
+  onImg.src = 'modules/alarmedcar.png';
+  onImg.onload = function(){
+    state.sirenCarImages.on = onImg;
+    render();
+  };
 }
 
 // ============================================================
-// SETTINGS PANEL TOGGLE (mobile)
+// MODALS
 // ============================================================
-var btnToggle = document.getElementById('btnToggleSettings');
-var settingsPanel = document.getElementById('settingsPanel');
-var btnClose = document.getElementById('btnCloseSettings');
+var sirenedCarSound = document.getElementById('sirenedCarSound');
+if(sirenedCarSound){
+  sirenedCarSound.addEventListener('change', function(e){
+    var f = e.target.files[0];
+    if(!f) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      state.sirenedCarSound = ev.target.result;
+      var info = document.getElementById('sirenedCarSoundInfo');
+      if(info){
+        info.textContent = f.name + ' (' + Math.round(f.size/1024) + ' KB)';
+        info.classList.add('has-file');
+      }
+    };
+    reader.readAsDataURL(f);
+  });
+}
 
-if(btnToggle && settingsPanel){
-  function checkScreen(){
-    if(window.innerWidth <= 900){
-      btnToggle.style.display = 'flex';
-    } else {
-      btnToggle.style.display = 'none';
-      settingsPanel.classList.remove('open');
+var msgConfirm = document.getElementById('msgConfirm');
+if(msgConfirm){
+  msgConfirm.addEventListener('click', function(){
+    var title = document.getElementById('msgTitle').value;
+    var text = document.getElementById('msgText').value;
+    var key = state.hoverCell.x + ',' + state.hoverCell.y;
+    state.messagePapers[key] = { title: title, text: text };
+    document.getElementById('messagePaperModal').classList.remove('show');
+    showToast('Message saved');
+    render();
+  });
+}
+
+var adEventFile = document.getElementById('adEventFile');
+if(adEventFile){
+  adEventFile.addEventListener('change', function(e){
+    var f = e.target.files[0];
+    if(!f) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      state.pendingAdData = ev.target.result;
+      state.pendingAdType = f.type.startsWith('video') ? 'video' : 'image';
+      var info = document.getElementById('adEventInfo');
+      if(info){
+        info.textContent = f.name + ' (' + Math.round(f.size/1024) + ' KB)';
+        info.classList.add('has-file');
+      }
+    };
+    reader.readAsDataURL(f);
+  });
+}
+
+var adEventConfirm = document.getElementById('adEventConfirm');
+if(adEventConfirm){
+  adEventConfirm.addEventListener('click', function(){
+    if(state.pendingAdData && state.pendingAdX !== undefined){
+      saveHistory();
+      state.adEvents.push({
+        x: state.pendingAdX,
+        y: state.pendingAdY,
+        w: 6,
+        h: 4,
+        data: state.pendingAdData,
+        type: state.pendingAdType
+      });
+      state.pendingAdData = null;
+      state.pendingAdX = undefined;
+      state.pendingAdY = undefined;
     }
-  }
-  checkScreen();
-  window.addEventListener('resize', checkScreen);
-
-  btnToggle.addEventListener('click', function(){
-    settingsPanel.classList.toggle('open');
+    document.getElementById('adEventModal').classList.remove('show');
+    render();
   });
 }
 
-if(btnClose && settingsPanel){
-  btnClose.addEventListener('click', function(){
-    settingsPanel.classList.remove('open');
+document.querySelectorAll('[data-modal-close]').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var modal = this.closest('.modal-bg');
+    if(modal) modal.classList.remove('show');
   });
-}
+});
 
 // ============================================================
-// NEW MAP
+// NEW / SAVE / LOAD / EXPORT
 // ============================================================
 function openNewModal(){ document.getElementById('newMapModal').classList.add('show'); }
 
@@ -890,13 +1396,17 @@ document.getElementById('newMapCreate').addEventListener('click', function(){
 
 document.getElementById('btnNew').addEventListener('click', openNewModal);
 
-// ============================================================
-// SAVE / LOAD / EXPORT
-// ============================================================
 function serializeMap(){
   return window.MapData.serialize(
     { width: state.mapW, height: state.mapH, tiles: state.data },
-    state.settings
+    state.settings,
+    {
+      sirenedCars: state.sirenedCars,
+      messagePapers: state.messagePapers,
+      adEvents: state.adEvents,
+      teleportPairs: state.teleportPairs,
+      doors: state.doors
+    }
   );
 }
 
@@ -920,27 +1430,13 @@ function loadMapFromText(text){
     state.mapH = data.height;
     state.data = data.tiles.map(function(row){ return row.slice(); });
 
-    if(data.settings){
-      state.settings = data.settings;
-      // Update UI
-      var uis = [
-        ['sldHeliTime', 'numHeliTime', 'heliTime'],
-        ['sldZombieRate', 'numZombieRate', 'zombieRate'],
-        ['sldTankHp', 'numTankHp', 'tankHp'],
-        ['sldHordeCount', 'numHordeCount', 'hordeCount']
-      ];
-      uis.forEach(function(u){
-        var sl = document.getElementById(u[0]);
-        var nu = document.getElementById(u[1]);
-        if(sl) sl.value = state.settings[u[2]];
-        if(nu) nu.value = state.settings[u[2]];
-      });
-      if(selWeapon) selWeapon.value = state.settings.startWeapon || 'uzi';
-      if(selDiff) selDiff.value = state.settings.difficulty || 1;
-      if(selTransport) selTransport.value = state.settings.transportType || 'helicopter';
-      if(txtMapName) txtMapName.value = state.settings.mapName || 'Untitled Map';
-      if(txtMapAuthor) txtMapAuthor.value = state.settings.mapAuthor || 'Anonymous';
-    }
+    if(data.settings) state.settings = data.settings;
+
+    state.sirenedCars = data.sirenedCars || [];
+    state.messagePapers = data.messagePapers || {};
+    state.adEvents = data.adEvents || [];
+    state.teleportPairs = data.teleportPairs || {};
+    state.doors = data.doors || [];
 
     state.history = [];
     state.historyIndex = -1;
@@ -1003,6 +1499,599 @@ document.getElementById('btnExport').addEventListener('click', function(){
 });
 
 // ============================================================
+// SCRIPTING CONSOLE
+// ============================================================
+var consoleEl = document.getElementById('scriptConsole');
+var consoleOutput = document.getElementById('consoleOutput');
+var consoleInput = document.getElementById('consoleInput');
+var consoleBody = document.getElementById('consoleBody');
+var consoleDragHeader = document.getElementById('consoleDragHeader');
+var consoleResize = document.getElementById('consoleResize');
+
+var consoleVisible = false;
+var dragging = false;
+var dragOffset = { x: 0, y: 0 };
+var resizing = false;
+var resizeStart = { x: 0, y: 0, w: 0, h: 0 };
+
+// Command history
+var commandHistory = [];
+var commandHistoryIndex = -1;
+
+// Autocomplete state
+var autocompleteIndex = 0;
+var autocompleteMatches = [];
+var autocompleteActive = false;
+
+// ============================================================
+// COMMAND DEFINITIONS (autocomplete uchun)
+// ============================================================
+var COMMANDS = [
+  { cmd: 'help',         args: '',                      desc: 'Show help' },
+  { cmd: 'clear',        args: '',                      desc: 'Clear console output' },
+  { cmd: 'save',         args: '',                      desc: 'Save map to localStorage' },
+  { cmd: 'load',         args: '',                      desc: 'Load last saved map' },
+  { cmd: 'newsize',      args: 'W H',                   desc: 'Create new map (W×H)' },
+  { cmd: 'fill',         args: 'TILE_ID',               desc: 'Fill all with tile ID' },
+  { cmd: 'tile',         args: 'X Y TILE_ID',           desc: 'Set tile at X,Y' },
+  { cmd: 'clearobjects', args: '',                      desc: 'Clear all objects' },
+  { cmd: 'spawncar',     args: 'X Y [SIZE]',            desc: 'Place sirened car' },
+  { cmd: 'spawndoor',    args: 'X Y TYPE',              desc: 'Place door (easy/hard/safe)' },
+  { cmd: 'spawnteleport',args: 'X Y',                   desc: 'Place teleport (pair)' },
+  { cmd: 'spawnpaper',   args: 'X Y [TEXT]',            desc: 'Place message paper' },
+  { cmd: 'spawnad',      args: 'X Y',                   desc: 'Place ad/event marker' },
+  { cmd: 'spawnspawn',   args: 'X Y TYPE',              desc: 'Place spawn (player/zombie/tank)' },
+  { cmd: 'delete',       args: 'X Y',                   desc: 'Delete object at X,Y' },
+  { cmd: 'list',         args: '',                      desc: 'List object counts' },
+  { cmd: 'info',         args: '',                      desc: 'Show map info' },
+  { cmd: 'tiles',        args: '',                      desc: 'Show all tile IDs' },
+  { cmd: 'goto',         args: 'X Y',                   desc: 'Move camera to X,Y' },
+  { cmd: 'zoom',         args: 'LEVEL',                 desc: 'Set zoom (0.25 - 4)' },
+  { cmd: 'reload',       args: '',                      desc: 'Reload modules images' },
+  { cmd: 'sound',        args: 'FILE',                  desc: 'Load sound file (sirened car)' },
+  { cmd: 'export',       args: '',                      desc: 'Export map JSON' },
+  { cmd: 'reset',        args: '',                      desc: 'Reset map to default' }
+];
+
+// Tile IDs for autocomplete
+var TILE_IDS = Object.keys(TILES).map(function(id){
+  var t = TILES[id];
+  return { id: id, name: t.name };
+});
+
+// ============================================================
+// CONSOLE FUNCTIONS
+// ============================================================
+function toggleConsole(){
+  consoleVisible = !consoleVisible;
+  if(consoleVisible){
+    consoleEl.classList.add('show');
+    if(consoleInput) consoleInput.focus();
+  } else {
+    consoleEl.classList.remove('show');
+  }
+}
+
+// Console drag
+if(consoleDragHeader){
+  consoleDragHeader.addEventListener('mousedown', function(e){
+    if(e.target.closest('.console-controls')) return;
+    dragging = true;
+    var rect = consoleEl.getBoundingClientRect();
+    dragOffset.x = e.clientX - rect.left;
+    dragOffset.y = e.clientY - rect.top;
+    e.preventDefault();
+  });
+}
+
+window.addEventListener('mousemove', function(e){
+  if(dragging){
+    consoleEl.style.transform = 'none';
+    consoleEl.style.left = (e.clientX - dragOffset.x) + 'px';
+    consoleEl.style.top = (e.clientY - dragOffset.y) + 'px';
+    consoleEl.style.bottom = 'auto';
+  }
+  if(resizing){
+    var dw = e.clientX - resizeStart.x;
+    var dh = e.clientY - resizeStart.y;
+    consoleEl.style.width = Math.max(300, resizeStart.w + dw) + 'px';
+    consoleEl.style.height = Math.max(150, resizeStart.h + dh) + 'px';
+  }
+});
+
+window.addEventListener('mouseup', function(){
+  dragging = false;
+  resizing = false;
+});
+
+if(consoleResize){
+  consoleResize.addEventListener('mousedown', function(e){
+    resizing = true;
+    var rect = consoleEl.getBoundingClientRect();
+    resizeStart.x = e.clientX;
+    resizeStart.y = e.clientY;
+    resizeStart.w = rect.width;
+    resizeStart.h = rect.height;
+    e.preventDefault();
+  });
+}
+
+document.getElementById('consoleMinimize').addEventListener('click', function(){
+  consoleBody.style.display = consoleBody.style.display === 'none' ? 'flex' : 'none';
+});
+document.getElementById('consoleClose').addEventListener('click', function(){
+  toggleConsole();
+});
+
+// ============================================================
+// AUTOCOMPLETE
+// ============================================================
+function getAutocompleteMatches(input){
+  if(!input) return [];
+
+  var parts = input.split(/\s+/);
+  var lastPart = parts[parts.length - 1] || '';
+  var firstPart = parts[0] || '';
+
+  // Agar birinchi so'z yozilayotgan bo'lsa — command takliflari
+  if(parts.length === 1){
+    return COMMANDS.filter(function(c){
+      return c.cmd.indexOf(lastPart.toLowerCase()) === 0;
+    });
+  }
+
+  // Aks holda — args takliflari
+  var cmdName = firstPart.toLowerCase();
+
+  // Door type
+  if(cmdName === 'spawndoor' && parts.length === 4){
+    return ['easy', 'hard', 'safe'].map(function(d){
+      return { cmd: d, args: '', desc: 'Door type' };
+    }).filter(function(c){
+      return c.cmd.indexOf(lastPart.toLowerCase()) === 0;
+    });
+  }
+
+  // Spawn types
+  if(cmdName === 'spawnspawn' && parts.length === 4){
+    return ['player', 'zombie', 'common', 'special', 'tank'].map(function(d){
+      return { cmd: d, args: '', desc: 'Spawn type' };
+    }).filter(function(c){
+      return c.cmd.indexOf(lastPart.toLowerCase()) === 0;
+    });
+  }
+
+  // Tile IDs
+  if(cmdName === 'fill' || cmdName === 'tile'){
+    return TILE_IDS.filter(function(t){
+      return String(t.id).indexOf(lastPart) === 0;
+    }).map(function(t){
+      return { cmd: t.id, args: '', desc: 'Tile: ' + t.name };
+    });
+  }
+
+  return [];
+}
+
+function showAutocomplete(){
+  var input = consoleInput.value.trim();
+  var matches = getAutocompleteMatches(input);
+
+  // Eski autocomplete panelini o'chirish
+  var oldPanel = document.getElementById('autocompletePanel');
+  if(oldPanel) oldPanel.remove();
+
+  if(matches.length === 0 || !input){
+    autocompleteActive = false;
+    return;
+  }
+
+  autocompleteMatches = matches;
+  if(autocompleteIndex >= matches.length) autocompleteIndex = 0;
+
+  var panel = document.createElement('div');
+  panel.id = 'autocompletePanel';
+  panel.className = 'autocomplete-panel';
+
+  matches.slice(0, 8).forEach(function(m, i){
+    var item = document.createElement('div');
+    item.className = 'autocomplete-item' + (i === autocompleteIndex ? ' active' : '');
+    item.innerHTML = '<span class="ac-cmd">' + m.cmd + '</span>' +
+                     (m.args ? '<span class="ac-args">' + m.args + '</span>' : '') +
+                     '<span class="ac-desc">' + (m.desc || '') + '</span>';
+    item.addEventListener('click', function(){
+      applyAutocomplete(m);
+    });
+    panel.appendChild(item);
+  });
+
+  consoleEl.appendChild(panel);
+  autocompleteActive = true;
+}
+
+function applyAutocomplete(match){
+  var input = consoleInput.value;
+  var parts = input.split(/\s+/);
+  parts[parts.length - 1] = match.cmd;
+  consoleInput.value = parts.join(' ') + (match.args ? ' ' : '');
+  consoleInput.focus();
+  hideAutocomplete();
+}
+
+function hideAutocomplete(){
+  var panel = document.getElementById('autocompletePanel');
+  if(panel) panel.remove();
+  autocompleteActive = false;
+  autocompleteMatches = [];
+  autocompleteIndex = 0;
+}
+
+// Console input handlers
+if(consoleInput){
+  consoleInput.addEventListener('input', function(){
+    autocompleteIndex = 0;
+    showAutocomplete();
+  });
+
+  consoleInput.addEventListener('keydown', function(e){
+    // Tab — autocomplete
+    if(e.key === 'Tab'){
+      e.preventDefault();
+      if(autocompleteMatches.length > 0){
+        applyAutocomplete(autocompleteMatches[autocompleteIndex]);
+      }
+      return;
+    }
+
+    // Up/Down — command history
+    if(e.key === 'ArrowUp'){
+      e.preventDefault();
+      if(commandHistory.length > 0){
+        if(commandHistoryIndex === -1) commandHistoryIndex = commandHistory.length - 1;
+        else if(commandHistoryIndex > 0) commandHistoryIndex--;
+        consoleInput.value = commandHistory[commandHistoryIndex];
+      }
+      return;
+    }
+    if(e.key === 'ArrowDown'){
+      e.preventDefault();
+      if(commandHistory.length > 0 && commandHistoryIndex < commandHistory.length - 1){
+        commandHistoryIndex++;
+        consoleInput.value = commandHistory[commandHistoryIndex];
+      } else {
+        commandHistoryIndex = -1;
+        consoleInput.value = '';
+      }
+      return;
+    }
+
+    // Autocomplete panel navigation
+    if(autocompleteActive){
+      if(e.key === 'Tab' && !e.shiftKey){
+        e.preventDefault();
+        if(autocompleteMatches.length > 0){
+          applyAutocomplete(autocompleteMatches[autocompleteIndex]);
+        }
+        return;
+      }
+      if(e.key === 'ArrowRight' || (e.key === 'Tab' && e.shiftKey)){
+        // Boshqa variant
+      }
+    }
+
+    // Enter — execute
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      hideAutocomplete();
+      var cmd = consoleInput.value.trim();
+      if(cmd){
+        commandHistory.push(cmd);
+        commandHistoryIndex = -1;
+        consoleLog('> ' + cmd, 'line-input');
+        executeCommand(cmd);
+        consoleInput.value = '';
+      }
+      return;
+    }
+
+    // Escape — hide autocomplete
+    if(e.key === 'Escape'){
+      hideAutocomplete();
+      return;
+    }
+  });
+}
+
+function consoleLog(text, className){
+  if(!consoleOutput) return;
+  var line = document.createElement('div');
+  line.className = className || '';
+  line.textContent = text;
+  consoleOutput.appendChild(line);
+  consoleOutput.scrollTop = consoleOutput.scrollHeight;
+}
+
+// ============================================================
+// COMMAND EXECUTION
+// ============================================================
+function executeCommand(cmd){
+  var parts = cmd.split(/\s+/);
+  var command = parts[0].toLowerCase();
+  var args = parts.slice(1);
+
+  switch(command){
+    case 'help':
+      consoleLog('═══════════════════════════════', 'line-info');
+      consoleLog('Available commands:', 'line-info');
+      COMMANDS.forEach(function(c){
+        consoleLog('  ' + c.cmd + (c.args ? ' ' + c.args : '') + '  —  ' + c.desc);
+      });
+      consoleLog('Tip: Press TAB for autocomplete', 'line-info');
+      break;
+
+    case 'clear':
+      if(consoleOutput) consoleOutput.innerHTML = '';
+      break;
+
+    case 'save':
+      saveMapFile();
+      consoleLog('Saved', 'line-success');
+      break;
+
+    case 'load':
+      var saved = localStorage.getItem('letfordead_map');
+      if(saved){
+        loadMapFromText(saved);
+        consoleLog('Loaded', 'line-success');
+      } else {
+        consoleLog('No saved map', 'line-error');
+      }
+      break;
+
+    case 'newsize':
+      if(args.length >= 2){
+        var w = parseInt(args[0], 10);
+        var h = parseInt(args[1], 10);
+        if(w > 0 && h > 0){
+          createMap(w, h);
+          consoleLog('New map: ' + w + 'x' + h, 'line-success');
+        }
+      } else {
+        consoleLog('Usage: newsize W H', 'line-error');
+      }
+      break;
+
+    case 'fill':
+      if(args.length >= 1){
+        var id = parseInt(args[0], 10);
+        saveHistory();
+        for(var y = 0; y < state.mapH; y++){
+          for(var x = 0; x < state.mapW; x++){
+            state.data[y][x] = id;
+          }
+        }
+        render();
+        consoleLog('Filled with tile ' + id, 'line-success');
+      } else {
+        consoleLog('Usage: fill TILE_ID', 'line-error');
+      }
+      break;
+
+    case 'tile':
+      if(args.length >= 3){
+        var tx = parseInt(args[0], 10);
+        var ty = parseInt(args[1], 10);
+        var tid = parseInt(args[2], 10);
+        paintCell(tx, ty, tid);
+        render();
+        consoleLog('Tile set at ' + tx + ',' + ty, 'line-success');
+      } else {
+        consoleLog('Usage: tile X Y TILE_ID', 'line-error');
+      }
+      break;
+
+    case 'clearobjects':
+      saveHistory();
+      state.sirenedCars = [];
+      state.messagePapers = {};
+      state.adEvents = [];
+      state.teleportPairs = {};
+      state.doors = [];
+      render();
+      consoleLog('All objects cleared', 'line-success');
+      break;
+
+    case 'spawncar':
+      if(args.length >= 2){
+        var cx = parseInt(args[0], 10);
+        var cy = parseInt(args[1], 10);
+        var size = parseInt(args[2], 10) || 4;
+        saveHistory();
+        state.sirenedCars.push({
+          x: cx, y: cy,
+          size: size,
+          sound: state.sirenedCarSound || null,
+          imageOff: 'modules/alarmcar.png',
+          imageOn: 'modules/alarmedcar.png'
+        });
+        render();
+        consoleLog('Sirened car at ' + cx + ',' + cy + ' (size ' + size + ')', 'line-success');
+      } else {
+        consoleLog('Usage: spawncar X Y [SIZE]', 'line-error');
+      }
+      break;
+
+    case 'spawndoor':
+      if(args.length >= 3){
+        var dx = parseInt(args[0], 10);
+        var dy = parseInt(args[1], 10);
+        var dType = args[2];
+        if(['easy', 'hard', 'safe'].indexOf(dType) === -1){
+          consoleLog('Type must be: easy, hard, safe', 'line-error');
+          break;
+        }
+        saveHistory();
+        state.doors.push({ x: dx, y: dy, type: dType, position: state.doorPosition });
+        render();
+        consoleLog('Door (' + dType + ') at ' + dx + ',' + dy, 'line-success');
+      } else {
+        consoleLog('Usage: spawndoor X Y TYPE', 'line-error');
+      }
+      break;
+
+    case 'spawnteleport':
+      if(args.length >= 2){
+        var tpx = parseInt(args[0], 10);
+        var tpy = parseInt(args[1], 10);
+        saveHistory();
+        var pid = 1;
+        while(state.teleportPairs[pid] && state.teleportPairs[pid].length >= 2) pid++;
+        if(!state.teleportPairs[pid]) state.teleportPairs[pid] = [];
+        state.teleportPairs[pid].push({ x: tpx, y: tpy });
+        render();
+        consoleLog('Teleport at ' + tpx + ',' + tpy + ' (pair ' + pid + ')', 'line-success');
+      } else {
+        consoleLog('Usage: spawnteleport X Y', 'line-error');
+      }
+      break;
+
+    case 'spawnpaper':
+      if(args.length >= 2){
+        var px = parseInt(args[0], 10);
+        var py = parseInt(args[1], 10);
+        var text = args.slice(2).join(' ') || 'Click E to read';
+        saveHistory();
+        state.messagePapers[px + ',' + py] = { title: 'Note', text: text };
+        render();
+        consoleLog('Message paper at ' + px + ',' + py, 'line-success');
+      } else {
+        consoleLog('Usage: spawnpaper X Y [TEXT]', 'line-error');
+      }
+      break;
+
+    case 'spawnad':
+      if(args.length >= 2){
+        var ax = parseInt(args[0], 10);
+        var ay = parseInt(args[1], 10);
+        saveHistory();
+        state.adEvents.push({ x: ax, y: ay, w: 6, h: 4, data: null, type: 'image' });
+        render();
+        consoleLog('Ad/Event at ' + ax + ',' + ay, 'line-success');
+      } else {
+        consoleLog('Usage: spawnad X Y', 'line-error');
+      }
+      break;
+
+    case 'spawnspawn':
+      if(args.length >= 3){
+        var sx = parseInt(args[0], 10);
+        var sy = parseInt(args[1], 10);
+        var st = args[2].toLowerCase();
+        var tileId = 13;
+        if(st === 'player') tileId = 13;
+        else if(st === 'zombie') tileId = 16;
+        else if(st === 'common') tileId = 35;
+        else if(st === 'special') tileId = 36;
+        else if(st === 'tank') tileId = 34;
+        else { consoleLog('Type: player/zombie/common/special/tank', 'line-error'); break; }
+        paintCell(sx, sy, tileId);
+        render();
+        consoleLog('Spawn (' + st + ') at ' + sx + ',' + sy, 'line-success');
+      } else {
+        consoleLog('Usage: spawnspawn X Y TYPE', 'line-error');
+      }
+      break;
+
+    case 'delete':
+      if(args.length >= 2){
+        state.hoverCell.x = parseInt(args[0], 10);
+        state.hoverCell.y = parseInt(args[1], 10);
+        deleteObjectAtHover();
+        consoleLog('Deleted at ' + args[0] + ',' + args[1], 'line-success');
+      } else {
+        consoleLog('Usage: delete X Y', 'line-error');
+      }
+      break;
+
+    case 'list':
+      consoleLog('Sirened cars: ' + state.sirenedCars.length, 'line-info');
+      consoleLog('Doors: ' + state.doors.length, 'line-info');
+      consoleLog('Message papers: ' + Object.keys(state.messagePapers).length, 'line-info');
+      consoleLog('Ad events: ' + state.adEvents.length, 'line-info');
+      consoleLog('Teleport pairs: ' + Object.keys(state.teleportPairs).length, 'line-info');
+      break;
+
+    case 'info':
+      consoleLog('Map: ' + state.mapW + 'x' + state.mapH, 'line-info');
+      consoleLog('Name: ' + state.settings.mapName, 'line-info');
+      consoleLog('Author: ' + state.settings.mapAuthor, 'line-info');
+      consoleLog('Transport: ' + state.settings.transportType, 'line-info');
+      consoleLog('Zoom: ' + state.zoom.toFixed(2), 'line-info');
+      consoleLog('Camera: ' + state.camera.x.toFixed(0) + ',' + state.camera.y.toFixed(0), 'line-info');
+      break;
+
+    case 'tiles':
+      consoleLog('Tile IDs:', 'line-info');
+      Object.keys(TILES).forEach(function(id){
+        var t = TILES[id];
+        consoleLog('  ' + id + ' = ' + t.name + ' [' + t.sub + ']');
+      });
+      break;
+
+    case 'goto':
+      if(args.length >= 2){
+        var gx = parseInt(args[0], 10) * CELL_SIZE * state.zoom;
+        var gy = parseInt(args[1], 10) * CELL_SIZE * state.zoom;
+        state.camera.x = gx - canvas.width / 2;
+        state.camera.y = gy - canvas.height / 2;
+        render();
+        consoleLog('Camera moved to ' + args[0] + ',' + args[1], 'line-success');
+      } else {
+        consoleLog('Usage: goto X Y', 'line-error');
+      }
+      break;
+
+    case 'zoom':
+      if(args.length >= 1){
+        var z = parseFloat(args[0]);
+        if(z >= state.minZoom && z <= state.maxZoom){
+          state.zoom = z;
+          render();
+          consoleLog('Zoom: ' + z, 'line-success');
+        } else {
+          consoleLog('Zoom must be between ' + state.minZoom + ' and ' + state.maxZoom, 'line-error');
+        }
+      }
+      break;
+
+    case 'reload':
+      loadSirenedCarImages();
+      consoleLog('Images reloading...', 'line-info');
+      break;
+
+    case 'sound':
+      consoleLog('Use the Sirened Car modal to upload sound', 'line-info');
+      break;
+
+    case 'export':
+      document.getElementById('btnExport').click();
+      consoleLog('Exported', 'line-success');
+      break;
+
+    case 'reset':
+      if(confirm('Reset map? All changes will be lost.')){
+        createMap(DEFAULT_W, DEFAULT_H);
+        consoleLog('Map reset', 'line-success');
+      }
+      break;
+
+    default:
+      consoleLog('Unknown command: ' + command, 'line-error');
+      consoleLog('Type "help" for list', 'line-info');
+  }
+}
+
+// ============================================================
 // INIT
 // ============================================================
 function init(){
@@ -1011,7 +2100,6 @@ function init(){
   selectTile(2);
   createMap(DEFAULT_W, DEFAULT_H);
 
-  // Default: tashqi devorlar + pol
   for(var x = 0; x < state.mapW; x++){
     state.data[0][x] = 2;
     state.data[state.mapH - 1][x] = 2;
@@ -1025,11 +2113,13 @@ function init(){
       state.data[yy][xx] = 1;
     }
   }
-  // Player spawn markazda
   state.data[Math.floor(state.mapH / 2)][Math.floor(state.mapW / 2)] = 13;
 
+  loadSirenedCarImages();
+
   render();
-  console.log('[MapMaker] Ready — ' + DEFAULT_W + 'x' + DEFAULT_H);
+  console.log('[MapMaker] Ready');
+  console.log('[MapMaker] Press ` or ~ for console');
 }
 
 init();
